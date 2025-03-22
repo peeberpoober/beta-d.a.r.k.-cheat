@@ -53,42 +53,7 @@ namespace dark_cheat
             return Regex.Replace(name, "<color=.*?>(.*?)<\\/color> ", ""); // Removes "[LIVE] " or "[DEAD] " at the start
         }
 
-        public static void ForceMutePlayer()
-        {
-            if (Hax2.selectedPlayerIndex < 0 || Hax2.selectedPlayerIndex >= Hax2.playerList.Count)
-            {
-                Debug.Log("Invalid player index!");
-                return;
-            }
-            var selectedPlayer = Hax2.playerList[Hax2.selectedPlayerIndex];
-            if (selectedPlayer == null)
-            {
-                Debug.Log("Selected player is null!");
-                return;
-            }
-            string selectedPlayerName = StripRichTextTags(Hax2.playerNames[Hax2.selectedPlayerIndex]);
-            Debug.Log($"Searching for PlayerVoiceChat belonging to: '{selectedPlayerName}'");
-            foreach (var playerVoiceChat in Object.FindObjectsOfType<PlayerVoiceChat>())
-            {
-                string voiceChatOwnerName = StripRichTextTags(playerVoiceChat.GetComponent<PhotonView>().Owner.NickName);
-                if (voiceChatOwnerName == selectedPlayerName)
-                {
-                    Debug.Log($"Found PlayerVoiceChat for {selectedPlayerName} on {playerVoiceChat.gameObject.name}!");
-                    var photonView = playerVoiceChat.GetComponent<PhotonView>();
-                    if (photonView == null)
-                    {
-                        Debug.LogError("PhotonView not found on PlayerVoiceChat GameObject!");
-                        return;
-                    }
-                    Debug.Log($"Attempting to Mute {selectedPlayerName}");
-                    photonView.RPC("MicrophoneVolumeSettingRPC", RpcTarget.All, -10000000);
-                    Debug.Log($"Successfully Muted {selectedPlayerName}!");
-                    return;
-                }
-            }
-            Debug.LogError($"No matching PlayerVoiceChat found for '{selectedPlayerName}'!");
-        }
-        public static void ForcePlayerMicVolumeHigh(int volume)
+        public static void ForcePlayerMicVolume(int volume)
         {
             if (Hax2.selectedPlayerIndex < 0 || Hax2.selectedPlayerIndex >= Hax2.playerList.Count)
             {

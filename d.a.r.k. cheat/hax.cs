@@ -1245,13 +1245,13 @@ namespace dark_cheat
 
                         if (UIHelper.Button("Force Mute", 0, miscYPos))
                         {
-                            MiscFeatures.ForceMutePlayer();
+                            MiscFeatures.ForcePlayerMicVolume(-999999);
                         }
                         miscYPos += parentSpacing;
 
                         if (UIHelper.Button("Force High Volume", 0, miscYPos))
                         {
-                            MiscFeatures.ForcePlayerMicVolumeHigh(9999);
+                            MiscFeatures.ForcePlayerMicVolume(999999);
                         }
                         miscYPos += parentSpacing;
 
