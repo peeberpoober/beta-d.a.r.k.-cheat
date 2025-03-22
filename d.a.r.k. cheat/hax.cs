@@ -132,6 +132,7 @@ namespace dark_cheat
         private float nextUpdateTime = 0f;
         private const float updateInterval = 10f;
 
+        public static bool hasInitializedDefaults = false;
         private bool sliderDragging = false;
         private bool dragTargetIsMin = false;
         private Vector2 sourceDropdownScrollPosition = Vector2.zero;
@@ -149,9 +150,9 @@ namespace dark_cheat
         private int selectedEnemyIndex = 0;
         private List<string> enemyNames = new List<string>();
         private List<Enemy> enemyList = new List<Enemy>();
-        private float oldSliderValue = 0.5f;
-        private float oldSliderValueStrength = 0.5f;
-        private float sliderValue = 0.5f;
+        public static float oldSliderValue = 0.5f;
+        public static float oldSliderValueStrength = 0.5f;
+        public static float sliderValue = 0.5f;
         public static float sliderValueStrength = 0.5f;
         public static float offsetESp = 0.5f;
         public static bool showMenu = true;
@@ -180,7 +181,7 @@ namespace dark_cheat
         private float enemyTeleportTotalWidth;
         private float enemyTeleportStartX;
 
-        public static string[] levelsToSearchItems = { "Level - Manor", "Level - Wizard", "Level - Arctic" };
+        public static string[] levelsToSearchItems = { "Level - Manor", "Level - Wizard", "Level - Arctic", "Level - Shop", "Level - Lobby" };
 
         private GUIStyle menuStyle;
         private bool initialized = false;
@@ -301,20 +302,25 @@ namespace dark_cheat
                 PerformDelayedLevelUpdate();
             }
         }
+
         private void PerformDelayedLevelUpdate()
         {
-            UpdatePlayerList(); // Update all player and enemy lists
+            UpdatePlayerList();
             UpdateEnemyList();
-            if (showTeleportUI) // Update teleport options if UIs are open
+
+            if (showTeleportUI) UpdateTeleportOptions();
+            if (showEnemyTeleportUI) UpdateEnemyTeleportOptions();
+            if (!Hax2.hasInitializedDefaults)
             {
-                UpdateTeleportOptions();
+                PlayerController.LoadDefaultStatsIntoHax2();
+                Hax2.hasInitializedDefaults = true;
             }
-            if (showEnemyTeleportUI)
-            {
-                UpdateEnemyTeleportOptions();
-            }
+
+            PlayerController.ReapplyAllStats();
+
             DLog.Log($"Level update -> Player list: {playerNames.Count} players, Enemy list: {enemyNames.Count} enemies");
         }
+
         public void Start()
         {
             hotkeyManager = HotkeyManager.Instance;
@@ -352,7 +358,6 @@ namespace dark_cheat
 
         public void Update()
         {
-
             CheckIfHost();
             levelCheckTimer += Time.deltaTime;
             if (levelCheckTimer >= LEVEL_CHECK_INTERVAL)
@@ -360,6 +365,7 @@ namespace dark_cheat
                 levelCheckTimer = 0f;
                 CheckForLevelChange();
             }
+
             if (Input.GetKeyDown(hotkeyManager.MenuToggleKey))
             {
                 Hax2.showMenu = !Hax2.showMenu;
@@ -372,7 +378,9 @@ namespace dark_cheat
                 if (!Hax2.showMenu) TryUnlockCamera();
                 UpdateCursorState();
             }
+
             if (Input.GetKeyDown(hotkeyManager.ReloadKey)) Start();
+
             if (Input.GetKeyDown(hotkeyManager.UnloadKey))
             {
                 Hax2.showMenu = false;
@@ -381,11 +389,10 @@ namespace dark_cheat
                 CursorController.UpdateCursorState();
 
                 TryUnlockCamera();
-
                 UpdateCursorState();
-
                 Loader.UnloadCheat();
             }
+
             if (hotkeyManager.ConfiguringHotkey)
             {
                 foreach (KeyCode key in Enum.GetValues(typeof(KeyCode)))
@@ -409,7 +416,20 @@ namespace dark_cheat
                 }
             }
 
+            if (Mathf.Abs(Hax2.sliderValue - Hax2.oldSliderValue) > 0.01f)
+            {
+                PlayerController.SetSprintSpeed(Hax2.sliderValue);
+                Hax2.oldSliderValue = Hax2.sliderValue;
+            }
+
+            if (Mathf.Abs(Hax2.sliderValueStrength - Hax2.oldSliderValueStrength) > 0.01f)
+            {
+                Strength.MaxStrength();
+                Hax2.oldSliderValueStrength = Hax2.sliderValueStrength;
+            }
+
             Strength.UpdateStrength();
+
             if (RunManager.instance.levelCurrent != null && levelsToSearchItems.Contains(RunManager.instance.levelCurrent.name))
             {
                 if (Time.time >= nextUpdateTime)
@@ -420,22 +440,12 @@ namespace dark_cheat
                     nextUpdateTime = Time.time + updateInterval;
                 }
 
-                if (oldSliderValue != sliderValue)
-                {
-                    PlayerController.SetSprintSpeed(sliderValue);
-                    oldSliderValue = sliderValue;
-                }
-                if (oldSliderValueStrength != sliderValueStrength)
-                {
-                    Strength.MaxStrength();
-                    oldSliderValueStrength = sliderValueStrength;
-                }
                 if (playerColor.isRandomizing)
                 {
                     playerColor.colorRandomizer();
                 }
 
-                hotkeyManager.CheckAndExecuteHotkeys(); // Execute hotkeys only when in game
+                hotkeyManager.CheckAndExecuteHotkeys();
 
                 if (Hax2.showMenu) TryLockCamera();
                 if (NoclipController.noclipActive)
@@ -830,10 +840,10 @@ namespace dark_cheat
                         Hax2.grabRange = UIHelper.Slider(Hax2.grabRange, 0f, 50f, 0, selfYPos);
                         selfYPos += childIndent;
 
-                        UIHelper.Label("Sprint Speed: " + sliderValue, 0, selfYPos);
+                        UIHelper.Label("Sprint Speed: " + Hax2.sliderValue, 0, selfYPos);
                         selfYPos += childIndent;
                         oldSliderValue = sliderValue;
-                        sliderValue = UIHelper.Slider(sliderValue, 1f, 30f, 0, selfYPos);
+                        Hax2.sliderValue = UIHelper.Slider(Hax2.sliderValue, 1f, 30f, 0, selfYPos);
                         selfYPos += childIndent;
 
                         UIHelper.Label("Stamina Recharge Delay: " + Hax2.staminaRechargeDelay, 0, selfYPos);
