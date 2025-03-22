@@ -98,44 +98,26 @@ namespace dark_cheat
 
         public static void SetSprintSpeed(float value)
         {
-            var playerInSpeedType = Type.GetType("PlayerController, Assembly-CSharp");
-            if (playerInSpeedType != null)
+            InitializePlayerController(); // Always refresh instance
+
+            if (playerControllerInstance == null)
             {
-                DLog.Log("playerInSpeedType not null");
-                playerSpeedInstance = GameHelper.FindObjectOfType(playerInSpeedType);
-                if (playerSpeedInstance != null)
-                {
-                    DLog.Log("playerSpeedInstance not null");
-                }
-                else
-                {
-                    DLog.Log("playerSpeedInstance is null");
-                }
+                DLog.Log("playerControllerInstance is null in SetSprintSpeed.");
+                return;
+            }
+
+            var sprintSpeedField = playerControllerType.GetField("SprintSpeed", BindingFlags.Public | BindingFlags.Instance);
+            if (sprintSpeedField != null)
+            {
+                sprintSpeedField.SetValue(playerControllerInstance, value);
+                DLog.Log($"SprintSpeed value set to {value}");
             }
             else
             {
-                DLog.Log("playerInSpeedType is null");
-            }
-
-            if (playerSpeedInstance != null)
-            {
-                DLog.Log("playerSpeedInstance not null");
-
-                var playerControllerType = playerSpeedInstance.GetType();
-
-                var sprintSpeedField = playerControllerType.GetField("SprintSpeed", BindingFlags.Public | BindingFlags.Instance);
-
-                if (sprintSpeedField != null)
-                {
-                    sprintSpeedField.SetValue(playerSpeedInstance, value);
-                    DLog.Log("SprintSpeed value set to " + value);
-                }
-                else
-                {
-                    DLog.Log("SprintSpeed field not found in PlayerController.");
-                }
+                DLog.Log("SprintSpeed field not found in PlayerController.");
             }
         }
+
 
         public static void MaxHealth()
         {
@@ -512,5 +494,79 @@ namespace dark_cheat
                 DLog.Log("SlideDecay field not found in PlayerController.");
             }
         }
+        public static void ReapplyAllStats()
+        {
+            InitializePlayerController();
+            if (playerControllerInstance == null) return;
+
+            DLog.Log("Reapplying all custom stats after level load...");
+
+            // Reapply each stat using current cheat settings
+            SetSprintSpeed(Hax2.sliderValue); // sprint speed
+            Strength.MaxStrength();           // grab strength
+            MaxStamina();                     // infinite stamina toggle
+            MaxHealth();                      // infinite health toggle
+            ReapplyStaminaSettings();        // stamina regen delay/rate
+            SetThrowStrength(Hax2.throwStrength);
+            SetGrabRange(Hax2.grabRange);
+            SetCrouchDelay(Hax2.crouchDelay);
+            SetCrouchSpeed(Hax2.crouchSpeed);
+            SetJumpForce(Hax2.jumpForce);
+            SetExtraJumps(Hax2.extraJumps);
+            SetCustomGravity(Hax2.customGravity);
+            SetSlideDecay(Hax2.slideDecay);
+            SetFlashlightIntensity(Hax2.flashlightIntensity);
+
+            DLog.Log("Finished reapplying all custom stat modifications.");
+        }
+        public static void LoadDefaultStatsIntoHax2()
+        {
+            InitializePlayerController();
+            if (playerControllerInstance == null) return;
+
+            DLog.Log("Loading default stats from PlayerController into Hax2");
+
+            var type = playerControllerType;
+
+            // Helper function
+            float GetFloat(string fieldName, float fallback)
+            {
+                var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+                if (field != null)
+                {
+                    object value = field.GetValue(playerControllerInstance);
+                    if (value is float f) return f;
+                }
+                return fallback;
+            }
+
+            int GetInt(string fieldName, int fallback)
+            {
+                var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+                if (field != null)
+                {
+                    object value = field.GetValue(playerControllerInstance);
+                    if (value is int i) return i;
+                }
+                return fallback;
+            }
+
+            Hax2.sliderValue = GetFloat("SprintSpeed", 5f);
+            Hax2.sliderValueStrength = GetFloat("grabStrength", 1f);
+            Hax2.throwStrength = GetFloat("throwStrength", 1f);
+            Hax2.grabRange = GetFloat("grabRange", 5f);
+            Hax2.jumpForce = GetFloat("JumpForce", 10f);
+            Hax2.crouchSpeed = GetFloat("CrouchSpeed", 3f);
+            Hax2.crouchDelay = GetFloat("CrouchTimeMin", 0.2f);
+            Hax2.customGravity = GetFloat("CustomGravity", 9.81f);
+            Hax2.extraJumps = GetInt("JumpExtra", 1);
+            Hax2.flashlightIntensity = 1f;
+
+            Hax2.oldSliderValue = Hax2.sliderValue;
+            Hax2.oldSliderValueStrength = Hax2.sliderValueStrength;
+
+            DLog.Log("Default stat values loaded into Hax2.");
+        }
+
     }
 }
