@@ -197,7 +197,7 @@ namespace dark_cheat
 
         public static float jumpForce = 1f;
         public static float customGravity = 1f;
-        public static int extraJumps = 1;
+        public static int extraJumps = 0;
         public static float flashlightIntensity = 1f;
         public static float crouchDelay = 1f;
         public static float crouchSpeed = 1f;
