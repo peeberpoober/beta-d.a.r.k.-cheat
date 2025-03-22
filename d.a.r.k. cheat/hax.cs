@@ -825,15 +825,9 @@ namespace dark_cheat
                         Hax2.throwStrength = UIHelper.Slider(Hax2.throwStrength, 0f, 50f, 0, selfYPos);
                         selfYPos += childIndent;
 
-                        UIHelper.Label("Range: " + Hax2.grabRange, 0, selfYPos);
+                        UIHelper.Label("Grab Range: " + Hax2.grabRange, 0, selfYPos);
                         selfYPos += childIndent;
                         Hax2.grabRange = UIHelper.Slider(Hax2.grabRange, 0f, 50f, 0, selfYPos);
-                        selfYPos += childIndent;
-
-                        UIHelper.Label("Walk Speed: " + sliderValue, 0, selfYPos);
-                        selfYPos += childIndent;
-                        oldSliderValue = sliderValue;
-                        sliderValue = UIHelper.Slider(sliderValue, 1f, 30f, 0, selfYPos);
                         selfYPos += childIndent;
 
                         UIHelper.Label("Sprint Speed: " + sliderValue, 0, selfYPos);
