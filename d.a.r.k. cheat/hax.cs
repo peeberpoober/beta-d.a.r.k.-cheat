@@ -352,6 +352,7 @@ namespace dark_cheat
 
         public void Update()
         {
+
             CheckIfHost();
             levelCheckTimer += Time.deltaTime;
             if (levelCheckTimer >= LEVEL_CHECK_INTERVAL)
@@ -421,7 +422,7 @@ namespace dark_cheat
 
                 if (oldSliderValue != sliderValue)
                 {
-                    PlayerController.RemoveSpeed(sliderValue);
+                    PlayerController.SetSprintSpeed(sliderValue);
                     oldSliderValue = sliderValue;
                 }
                 if (oldSliderValueStrength != sliderValueStrength)
