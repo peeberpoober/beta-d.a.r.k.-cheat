@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
@@ -96,42 +96,43 @@ namespace dark_cheat
             }
         }
 
-        public static void RemoveSpeed(float sliderValue)
+        public static void SetSprintSpeed(float value)
         {
             var playerInSpeedType = Type.GetType("PlayerController, Assembly-CSharp");
             if (playerInSpeedType != null)
             {
-                DLog.Log("playerInSpeedType n é null");
+                DLog.Log("playerInSpeedType not null");
                 playerSpeedInstance = GameHelper.FindObjectOfType(playerInSpeedType);
                 if (playerSpeedInstance != null)
                 {
-                    DLog.Log("playerSpeedInstance n é null");
+                    DLog.Log("playerSpeedInstance not null");
                 }
                 else
                 {
-                    DLog.Log("playerSpeedInstance null");
+                    DLog.Log("playerSpeedInstance is null");
                 }
             }
             else
             {
-                DLog.Log("playerInSpeedType null");
+                DLog.Log("playerInSpeedType is null");
             }
+
             if (playerSpeedInstance != null)
             {
-                DLog.Log("playerSpeedInstance n é null");
+                DLog.Log("playerSpeedInstance not null");
 
                 var playerControllerType = playerSpeedInstance.GetType();
 
-                var moveSpeedField1 = playerControllerType.GetField("MoveSpeed", BindingFlags.Public | BindingFlags.Instance);
+                var sprintSpeedField = playerControllerType.GetField("SprintSpeed", BindingFlags.Public | BindingFlags.Instance);
 
-                if (moveSpeedField1 != null)
+                if (sprintSpeedField != null)
                 {
-                    moveSpeedField1.SetValue(playerSpeedInstance, sliderValue);
-                    DLog.Log("MoveSpeed value set to " + sliderValue);
+                    sprintSpeedField.SetValue(playerSpeedInstance, value);
+                    DLog.Log("SprintSpeed value set to " + value);
                 }
                 else
                 {
-                    DLog.Log("MoveSpeed field not found in PlayerController.");
+                    DLog.Log("SprintSpeed field not found in PlayerController.");
                 }
             }
         }
