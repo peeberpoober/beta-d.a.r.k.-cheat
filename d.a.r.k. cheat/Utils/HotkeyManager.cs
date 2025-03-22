@@ -170,14 +170,14 @@ namespace dark_cheat
             availableActions.Add(new HotkeyAction("Max Speed", () =>
             {
                 Hax2.sliderValueStrength = 30f;
-                PlayerController.RemoveSpeed(Hax2.sliderValueStrength);
+                PlayerController.SetSprintSpeed(Hax2.sliderValueStrength);
                 DLog.Log("speed set to maximum (30)");
             }, "sets speed to maximum value"));
 
             availableActions.Add(new HotkeyAction("Normal Speed", () =>
             {
                 Hax2.sliderValueStrength = 5f;
-                PlayerController.RemoveSpeed(Hax2.sliderValueStrength);
+                PlayerController.SetSprintSpeed(Hax2.sliderValueStrength);
                 DLog.Log("speed set to normal (5)");
             }, "sets speed to normal value"));
 
