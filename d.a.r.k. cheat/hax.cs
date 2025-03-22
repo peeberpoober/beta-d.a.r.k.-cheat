@@ -1267,22 +1267,6 @@ namespace dark_cheat
                         }
                         miscYPos += parentSpacing;
 
-                        if (UIHelper.Button("[HOST] Spawn Money", 0, miscYPos))
-                        {
-                            DLog.Log("'Spawn Money' button clicked!");
-                            GameObject localPlayer = DebugCheats.GetLocalPlayer();
-                            if (localPlayer == null)
-                            {
-                                DLog.Log("Local player not found!");
-                                return;
-                            }
-                            Vector3 targetPosition = localPlayer.transform.position + Vector3.up * 1.5f;
-                            transform.position = targetPosition;
-                            ItemSpawner.SpawnMoney(targetPosition);
-                            DLog.Log("Money spawned.");
-                        }
-                        miscYPos += parentSpacing;
-
                         bool newNoFogState = UIHelper.ButtonBool("No Fog", MiscFeatures.NoFogEnabled, 0, miscYPos);
                         if (newNoFogState != MiscFeatures.NoFogEnabled)
                         {
