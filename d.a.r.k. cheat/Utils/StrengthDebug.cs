@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
@@ -15,6 +15,7 @@ namespace dark_cheat
         private static PhotonView physGrabberPhotonView;
         private static PhotonView punManagerPhotonView;
         private static float lastAppliedStrength = -1f;
+        private static bool? lastGrabbedState = null;
 
         private static void InitializePlayerController()
         {
@@ -89,7 +90,13 @@ namespace dark_cheat
 
             var grabbedField = physGrabberInstance.GetType().GetField("grabbed", BindingFlags.Public | BindingFlags.Instance);
             bool isGrabbed = grabbedField != null && (bool)grabbedField.GetValue(physGrabberInstance);
-            DLog.Log($"isGrabbed: {isGrabbed}");
+
+            // Only log if the grabbed state changed
+            if (lastGrabbedState == null || isGrabbed != lastGrabbedState)
+            {
+                DLog.Log($"isGrabbed: {isGrabbed}");
+                lastGrabbedState = isGrabbed;
+            }
 
             if (isGrabbed)
             {
