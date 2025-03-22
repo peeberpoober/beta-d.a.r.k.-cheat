@@ -1255,6 +1255,18 @@ namespace dark_cheat
                         }
                         miscYPos += parentSpacing;
 
+                        if (UIHelper.Button("Crash Lobby", 0, miscYPos))
+                        {
+                            DLog.Log("Crashing Lobby!");
+                            GameObject localPlayer = DebugCheats.GetLocalPlayer();
+                            if (localPlayer == null)
+                                return;
+                            Vector3 targetPosition = localPlayer.transform.position + Vector3.up * 1.5f;
+                            transform.position = targetPosition;
+                            CrashLobby.Crash(targetPosition);
+                        }
+                        miscYPos += parentSpacing;
+
                         if (UIHelper.Button("[HOST] Spawn Money", 0, miscYPos))
                         {
                             DLog.Log("'Spawn Money' button clicked!");
