@@ -516,6 +516,7 @@ namespace dark_cheat
             SetCustomGravity(Hax2.customGravity);
             SetSlideDecay(Hax2.slideDecay);
             SetFlashlightIntensity(Hax2.flashlightIntensity);
+            SetFieldOfView(Hax2.fieldOfView);
 
             DLog.Log("Finished reapplying all custom stat modifications.");
         }
@@ -564,8 +565,22 @@ namespace dark_cheat
 
             Hax2.oldSliderValue = Hax2.sliderValue;
             Hax2.oldSliderValueStrength = Hax2.sliderValueStrength;
+            Hax2.fieldOfView = 70f;
+            Hax2.oldFieldOfView = Hax2.fieldOfView;
 
             DLog.Log("Default stat values loaded into Hax2.");
+        }
+
+        public static void SetFieldOfView(float fov)
+        {
+            FOVEditor editor = GameObject.FindObjectOfType<FOVEditor>();
+            if (editor == null)
+            {
+                GameObject obj = new GameObject("FOVEditor");
+                editor = obj.AddComponent<FOVEditor>();
+                GameObject.DontDestroyOnLoad(obj);
+            }
+            editor.SetFOV(fov);
         }
 
     }

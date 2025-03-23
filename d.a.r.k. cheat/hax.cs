@@ -130,6 +130,8 @@ namespace dark_cheat
 
     public class Hax2 : MonoBehaviour
     {
+        public static float fieldOfView = 70f;
+        public static float oldFieldOfView = 70f;
         private float nextUpdateTime = 0f;
         private const float updateInterval = 10f;
 
@@ -958,6 +960,28 @@ namespace dark_cheat
                             OldflashlightIntensity = Hax2.flashlightIntensity;
                         }
 
+                        // Ensure FOVEditor is present in the scene
+                        FOVEditor fovEditor = GameObject.FindObjectOfType<FOVEditor>();
+                        if (fovEditor == null)
+                        {
+                            GameObject fovObject = new GameObject("FOVEditor");
+                            fovEditor = fovObject.AddComponent<FOVEditor>();
+                            GameObject.DontDestroyOnLoad(fovObject);
+                        }
+
+                        // Get and show current value
+                        float currentFOV = fovEditor.GetFOV();
+                        UIHelper.Label("Field of View: " + Mathf.RoundToInt(currentFOV), 0, selfYPos);
+                        selfYPos += childIndent;
+
+                        // Show slider and update if changed
+                        float newFOV = UIHelper.Slider(currentFOV, 60f, 120f, 0, selfYPos);
+                        {
+                            fovEditor.SetFOV(newFOV);
+                            Hax2.fieldOfView = newFOV;
+                        }
+                        selfYPos += childIndent;
+
                         GUI.EndScrollView();
                         break;
 
@@ -1365,6 +1389,7 @@ namespace dark_cheat
 
                         float miscYPos = yPos;
 
+                        // Everything inside here gets scrolled:
                         UpdatePlayerList();
                         UIHelper.Label("Select a player:", 0, miscYPos);
                         miscYPos += childIndent;
