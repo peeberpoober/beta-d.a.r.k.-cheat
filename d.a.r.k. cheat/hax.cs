@@ -1892,13 +1892,14 @@ namespace dark_cheat
 
                             GUI.enabled = true;
                             itemYPos += parentSpacing;
-                        }
 
-                        if (GUI.Button(new Rect(0, itemYPos, 540, 30), "Spawn 50 of Selected Item"))
-                        {
-                            ItemSpawner.SpawnSelectedItemMultiple(50, availableItemsList, selectedItemToSpawnIndex, itemSpawnValue);
+                            // Move this button inside the showItemSpawner check
+                            if (GUI.Button(new Rect(0, itemYPos, 540, 30), "Spawn 50 of Selected Item"))
+                            {
+                                ItemSpawner.SpawnSelectedItemMultiple(50, availableItemsList, selectedItemToSpawnIndex, itemSpawnValue);
+                            }
+                            itemYPos += parentSpacing;
                         }
-                        itemYPos += parentSpacing;
 
                         GUI.EndScrollView();
                         break;
