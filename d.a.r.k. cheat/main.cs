@@ -63,6 +63,20 @@ namespace dark_cheat
             }
         }
 
+        [HarmonyPatch(typeof(InputManager), nameof(InputManager.KeyDown))]
+        public class BlockChatKey
+        {
+            static bool Prefix(InputKey key, ref bool __result)
+            {
+                if (key == InputKey.Chat && Hax2.showMenu)
+                {
+                    __result = false;
+                    return false;
+                }
+                return true;
+            }
+        }
+
         private static GameObject Load;
 
         public static void Init()
