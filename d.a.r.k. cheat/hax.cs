@@ -960,27 +960,34 @@ namespace dark_cheat
                             OldflashlightIntensity = Hax2.flashlightIntensity;
                         }
 
-                        // Ensure FOVEditor is present in the scene
-                        FOVEditor fovEditor = GameObject.FindObjectOfType<FOVEditor>();
-                        if (fovEditor == null)
+                        // Ensure FOVEditor exists
+                        if (FOVEditor.Instance == null)
                         {
                             GameObject fovObject = new GameObject("FOVEditor");
-                            fovEditor = fovObject.AddComponent<FOVEditor>();
-                            GameObject.DontDestroyOnLoad(fovObject);
+                            fovObject.AddComponent<FOVEditor>();
                         }
 
-                        // Get and show current value
-                        float currentFOV = fovEditor.GetFOV();
-                        UIHelper.Label("Field of View: " + Mathf.RoundToInt(currentFOV), 0, selfYPos);
-                        selfYPos += childIndent;
-
-                        // Show slider and update if changed
-                        float newFOV = UIHelper.Slider(currentFOV, 60f, 120f, 0, selfYPos);
+                        // Wait for Instance to initialize before using
+                        if (FOVEditor.Instance != null)
                         {
-                            fovEditor.SetFOV(newFOV);
-                            Hax2.fieldOfView = newFOV;
+                            float currentFOV = FOVEditor.Instance.GetFOV();
+                            UIHelper.Label("Field of View: " + Mathf.RoundToInt(currentFOV), 0, selfYPos);
+                            selfYPos += childIndent;
+
+                            float newFOV = UIHelper.Slider(currentFOV, 60f, 120f, 0, selfYPos);
+                            if (newFOV != currentFOV)
+                            {
+                                FOVEditor.Instance.SetFOV(newFOV);
+                                Hax2.fieldOfView = newFOV;
+                            }
+                            selfYPos += childIndent;
                         }
-                        selfYPos += childIndent;
+                        else
+                        {
+                            UIHelper.Label("Loading FOV Editor...", 0, selfYPos);
+                            selfYPos += childIndent * 2;
+                        }
+
 
                         GUI.EndScrollView();
                         break;
@@ -1460,21 +1467,20 @@ namespace dark_cheat
                         }
                         miscYPos += parentSpacing;
 
-                        float fh_centerX = 270f;
                         float fh_buttonWidth = 150f;
                         float fh_buttonHeight = 30f;
                         float fh_buttonSpacing = 10f;
                         float fh_totalWidth = (fh_buttonWidth * 2) + fh_buttonSpacing;
-                        float fh_startX = fh_centerX - (fh_totalWidth / 2);
+                        float fh_startX = (540f - fh_totalWidth) / 2f; // 540 = scrollView width
 
                         // Draw "Force Host" button
-                        if (GUI.Button(new Rect(startX, miscYPos, fh_buttonWidth, fh_buttonHeight), "Force Host"))
+                        if (GUI.Button(new Rect(fh_startX, miscYPos, fh_buttonWidth, fh_buttonHeight), "Force Host"))
                         {
                             ForceHost.Instance.StartCoroutine(ForceHost.Instance.ForceStart(availableLevels[selectedLevelIndex]));
                         }
 
                         // Draw dropdown toggle button
-                        if (GUI.Button(new Rect(startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, fh_buttonHeight), availableLevels[selectedLevelIndex]))
+                        if (GUI.Button(new Rect(fh_startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, fh_buttonHeight), availableLevels[selectedLevelIndex]))
                         {
                             showLevelDropdown = !showLevelDropdown;
                         }
@@ -1488,7 +1494,8 @@ namespace dark_cheat
                             int visibleItems = Mathf.Min(availableLevels.Length, maxVisibleItems);
                             float dropdownHeight = visibleItems * itemHeight;
 
-                            Rect dropdownRect = new Rect(startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, dropdownHeight);
+                            Rect dropdownRect = new Rect(fh_startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, dropdownHeight);
+
                             Rect dropdownContentRect = new Rect(0, 0, fh_buttonWidth - 20, availableLevels.Length * itemHeight);
 
                             levelDropdownScroll = GUI.BeginScrollView(dropdownRect, levelDropdownScroll, dropdownContentRect, false, true);

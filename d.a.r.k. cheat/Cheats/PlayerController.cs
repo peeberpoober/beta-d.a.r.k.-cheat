@@ -516,7 +516,10 @@ namespace dark_cheat
             SetCustomGravity(Hax2.customGravity);
             SetSlideDecay(Hax2.slideDecay);
             SetFlashlightIntensity(Hax2.flashlightIntensity);
-            SetFieldOfView(Hax2.fieldOfView);
+            if (FOVEditor.Instance != null)
+            {
+                FOVEditor.Instance.SetFOV(Hax2.fieldOfView);
+            }
 
             DLog.Log("Finished reapplying all custom stat modifications.");
         }
@@ -530,7 +533,7 @@ namespace dark_cheat
 
             var type = playerControllerType;
 
-            float GetFloat(string fieldName, float fallback) // Helper function
+            float GetFloat(string fieldName, float fallback)
             {
                 var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
                 if (field != null)
@@ -563,13 +566,14 @@ namespace dark_cheat
             Hax2.extraJumps = GetInt("JumpExtra", 1);
             Hax2.flashlightIntensity = 1f;
 
+            Hax2.fieldOfView = 70f;
+
             Hax2.oldSliderValue = Hax2.sliderValue;
             Hax2.oldSliderValueStrength = Hax2.sliderValueStrength;
-            Hax2.fieldOfView = 70f;
-            Hax2.oldFieldOfView = Hax2.fieldOfView;
 
             DLog.Log("Default stat values loaded into Hax2.");
         }
+
 
         public static void SetFieldOfView(float fov)
         {
