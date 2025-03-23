@@ -1089,5 +1089,38 @@ namespace dark_cheat
                 }
             }
         }
+        public static void SpawnSelectedItemMultiple(int count, List<string> availableItemsList, int selectedItemToSpawnIndex, int itemSpawnValue)
+        {
+            if (availableItemsList == null || availableItemsList.Count == 0 || selectedItemToSpawnIndex >= availableItemsList.Count)
+            {
+                DLog.LogError("No valid item selected to spawn multiple times.");
+                return;
+            }
+
+            GameObject localPlayer = DebugCheats.GetLocalPlayer();
+            if (localPlayer == null)
+            {
+                DLog.LogError("Local player not found for multiple spawn.");
+                return;
+            }
+
+            string itemName = availableItemsList[selectedItemToSpawnIndex];
+            bool isValuable = itemName.Contains("Valuable");
+
+            Vector3 basePos = localPlayer.transform.position + localPlayer.transform.forward * 1.5f + Vector3.up * 1f;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 offset = UnityEngine.Random.insideUnitSphere * 1f;
+                Vector3 spawnPos = basePos + offset;
+
+                if (isValuable)
+                    SpawnItem(itemName, spawnPos, itemSpawnValue);
+                else
+                    SpawnItem(itemName, spawnPos);
+            }
+
+            DLog.Log($"Spawned {count}x {itemName}");
+        }
     }
 }

@@ -130,6 +130,8 @@ namespace dark_cheat
 
     public class Hax2 : MonoBehaviour
     {
+        public static bool ChatDropdownVisible = false;
+        public static string ChatDropdownVisibleName = "All";
         public static float fieldOfView = 70f;
         public static float oldFieldOfView = 70f;
         private float nextUpdateTime = 0f;
@@ -143,6 +145,10 @@ namespace dark_cheat
             "Level - Lobby",
             "Level - Recording"
         };
+        private Vector2 chatDropdownScroll = Vector2.zero;
+        private bool showChatDropdown = false;
+        private int ChatSelectedPlayerIndex = 0;
+        private string chatMessageText = "discord.gg/xZs8PWacaY"; // Default message
         int selectedLevelIndex = 0;
         bool showLevelDropdown = false;
         Vector2 levelDropdownScroll = Vector2.zero;
@@ -1467,6 +1473,55 @@ namespace dark_cheat
                         }
                         miscYPos += parentSpacing;
 
+                        // Chat Spoof UI Layout
+                        float chatButtonHeight = 30f;
+                        float chatButtonWidth = 130f;
+                        float chatDropdownWidth = 130f;
+                        float chatAsLabelWidth = 20f;
+                        float chatSpacing = 10f;
+                        float totalChatWidth = chatButtonWidth + chatSpacing + chatAsLabelWidth + chatSpacing + chatDropdownWidth;
+                        float chatStartX = (540f - totalChatWidth) / 2f; // Centered in scroll view
+
+                        // Row: Send Chat | as | Dropdown Button
+                        if (GUI.Button(new Rect(chatStartX, miscYPos, chatButtonWidth, chatButtonHeight), "Send Chat"))
+                        {
+                            string targetName = ChatDropdownVisibleName;
+                            ChatHijack.MakeChat(chatMessageText, targetName, playerList, playerNames);
+                        }
+
+                        // "as" label
+                        GUI.Label(new Rect(chatStartX + chatButtonWidth + chatSpacing, miscYPos + 5f, chatAsLabelWidth, chatButtonHeight), "as");
+
+                        // Dropdown button (displays current selection)
+                        if (GUI.Button(new Rect(chatStartX + chatButtonWidth + chatSpacing + chatAsLabelWidth + chatSpacing, miscYPos, chatDropdownWidth, chatButtonHeight), ChatDropdownVisibleName))
+                        {
+                            ChatDropdownVisible = !ChatDropdownVisible;
+                        }
+                        miscYPos += chatButtonHeight + 5f;
+
+                        // Dropdown expansion (buttons)
+                        if (ChatDropdownVisible)
+                        {
+                            for (int i = 0; i < playerNames.Count + 1; i++)
+                            {
+                                string name = (i == 0) ? "All" : playerNames[i - 1];
+                                if (GUI.Button(new Rect(chatStartX + chatButtonWidth + chatSpacing + chatAsLabelWidth + chatSpacing, miscYPos, chatDropdownWidth, 25f), name))
+                                {
+                                    ChatDropdownVisibleName = name;
+                                    ChatDropdownVisible = false;
+                                }
+                                miscYPos += 25f;
+                            }
+                            miscYPos += 5f;
+                        }
+
+                        // Text box (centered below)
+                        float chatTextBoxWidth = 400f;
+                        float chatTextBoxHeight = 25f;
+                        float chatTextBoxX = (540f - chatTextBoxWidth) / 2f;
+                        chatMessageText = GUI.TextField(new Rect(chatTextBoxX, miscYPos, chatTextBoxWidth, chatTextBoxHeight), chatMessageText);
+                        miscYPos += chatTextBoxHeight + 5f; // Use 5f instead of parentSpacing for minimal gap
+
                         float fh_buttonWidth = 150f;
                         float fh_buttonHeight = 30f;
                         float fh_buttonSpacing = 10f;
@@ -1495,7 +1550,6 @@ namespace dark_cheat
                             float dropdownHeight = visibleItems * itemHeight;
 
                             Rect dropdownRect = new Rect(fh_startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, dropdownHeight);
-
                             Rect dropdownContentRect = new Rect(0, 0, fh_buttonWidth - 20, availableLevels.Length * itemHeight);
 
                             levelDropdownScroll = GUI.BeginScrollView(dropdownRect, levelDropdownScroll, dropdownContentRect, false, true);
@@ -1511,6 +1565,11 @@ namespace dark_cheat
 
                             miscYPos += dropdownHeight + 5f;
                         }
+                        else
+                        {
+                            miscYPos += 5f;
+                        }
+
 
                         miscYPos += parentSpacing;
                         GUI.EndScrollView();
@@ -1832,6 +1891,13 @@ namespace dark_cheat
                             }
 
                             GUI.enabled = true;
+                            itemYPos += parentSpacing;
+
+                            // Move this button inside the showItemSpawner check
+                            if (GUI.Button(new Rect(0, itemYPos, 540, 30), "Spawn 50 of Selected Item"))
+                            {
+                                ItemSpawner.SpawnSelectedItemMultiple(50, availableItemsList, selectedItemToSpawnIndex, itemSpawnValue);
+                            }
                             itemYPos += parentSpacing;
                         }
 
