@@ -5,9 +5,23 @@ namespace dark_cheat
 {
     public class FOVEditor : MonoBehaviour
     {
-        private float fovValue = 70f;
-        private bool fovEnabled = true;
+        public static FOVEditor Instance { get; private set; }
 
+        public float fovValue = 70f;
+        public bool fovEnabled = true;
+
+        private void Awake()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject); // Prevent duplicates
+            }
+        }
         void Update()
         {
             if (!fovEnabled) return;
