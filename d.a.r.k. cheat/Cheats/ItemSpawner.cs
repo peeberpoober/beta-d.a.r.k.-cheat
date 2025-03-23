@@ -142,7 +142,7 @@ namespace dark_cheat
                 availableItems.Add("Item Power Crystal");
                 availableItems.Add("Item Rubber Duck");
                 availableItems.Add("Item Upgrade Map Player Count");
-                availableItems.Add("Item Upgrade Player Stamina");
+                availableItems.Add("Item Upgrade Player Energy");
                 availableItems.Add("Item Upgrade Player Extra Jump");
                 availableItems.Add("Item Upgrade Player Grab Range");
                 availableItems.Add("Item Upgrade Player Grab Strength");
