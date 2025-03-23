@@ -38,33 +38,27 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\0Harmony.dll</HintPath>
     </Reference>
-    <Reference
-      Include="Mono.Cecil, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+    <Reference Include="Mono.Cecil, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\Mono.Cecil.dll</HintPath>
     </Reference>
-    <Reference
-      Include="Mono.Cecil.Mdb, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+    <Reference Include="Mono.Cecil.Mdb, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\Mono.Cecil.Mdb.dll</HintPath>
     </Reference>
-    <Reference
-      Include="Mono.Cecil.Pdb, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+    <Reference Include="Mono.Cecil.Pdb, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\Mono.Cecil.Pdb.dll</HintPath>
     </Reference>
-    <Reference
-      Include="Mono.Cecil.Rocks, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
+    <Reference Include="Mono.Cecil.Rocks, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\Mono.Cecil.Rocks.dll</HintPath>
     </Reference>
-    <Reference
-      Include="MonoMod.RuntimeDetour, Version=22.5.1.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="MonoMod.RuntimeDetour, Version=22.5.1.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\MonoMod.RuntimeDetour.dll</HintPath>
     </Reference>
-    <Reference
-      Include="MonoMod.Utils, Version=22.5.1.1, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="MonoMod.Utils, Version=22.5.1.1, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Assets\MonoMod.Utils.dll</HintPath>
     </Reference>
@@ -404,7 +398,6 @@
   <ItemGroup>
     <Compile Include="main.cs" />
     <Compile Include="hax.cs" />
-
     <Compile Include="Cheats\CrashLobby.cs" />
     <Compile Include="Cheats\DebugCheats.cs" />
     <Compile Include="Cheats\Enemies.cs" />
@@ -418,17 +411,17 @@
     <Compile Include="Cheats\Teleport.cs" />
     <Compile Include="Cheats\TumbleGuard.cs" />
     <Compile Include="Cheats\UnlimitedBattery.cs" />
-    
     <Compile Include="Utils\CursorController.cs" />
     <Compile Include="Utils\DebugController.cs" />
     <Compile Include="Utils\disablemethod.cs" />
+	<Compile Include="Utils\forcehost.cs" />
+    <Compile Include="Utils\FOVeditor.cs" />
     <Compile Include="Utils\GameHelper.cs" />
     <Compile Include="Utils\HotkeyManager.cs" />
     <Compile Include="Utils\ItemSync.cs" />
     <Compile Include="Utils\MapTools.cs" />
     <Compile Include="Utils\PlayerCheatSync.cs" />
     <Compile Include="Utils\StrengthDebug.cs" />
-
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
