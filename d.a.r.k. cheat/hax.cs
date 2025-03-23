@@ -193,7 +193,7 @@ namespace dark_cheat
         private float enemyTeleportTotalWidth;
         private float enemyTeleportStartX;
 
-        public static string[] levelsToSearchItems = { "Level - Manor", "Level - Wizard", "Level - Arctic", "Level - Shop", "Level - Lobby" };
+        public static string[] levelsToSearchItems = { "Level - Manor", "Level - Wizard", "Level - Arctic", "Level - Shop", "Level - Lobby", "Level - Recording" };
 
         private GUIStyle menuStyle;
         private bool initialized = false;
