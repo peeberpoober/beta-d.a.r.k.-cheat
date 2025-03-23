@@ -133,6 +133,17 @@ namespace dark_cheat
         private float nextUpdateTime = 0f;
         private const float updateInterval = 10f;
 
+        string[] availableLevels = new[] {
+            "Level - Wizard",
+            "Level - Shop",
+            "Level - Manor",
+            "Level - Arctic",
+            "Level - Lobby",
+            "Level - Recording"
+        };
+        int selectedLevelIndex = 0;
+        bool showLevelDropdown = false;
+        Vector2 levelDropdownScroll = Vector2.zero;
         public static bool hasInitializedDefaults = false;
         private bool sliderDragging = false;
         private bool dragTargetIsMin = false;
@@ -1346,9 +1357,10 @@ namespace dark_cheat
                         break;
 
                     case MenuCategory.Misc:
-                        Rect miscViewRect = new Rect(menuX + 30, menuY + 95, 560, 700);
-                        float miscContentHeight = 500; // Calculate based on actual content
-                        Rect miscContentRect = new Rect(0, 0, 540, miscContentHeight);
+                        Rect miscViewRect = new Rect(menuX + 30, menuY + 95, 560, 700); // visible scroll area
+                        float miscContentHeight = 1200f; // adjust this to match your actual layout height
+                        Rect miscContentRect = new Rect(0, 0, 540, miscContentHeight); // content bounds
+
                         miscScrollPosition = GUI.BeginScrollView(miscViewRect, miscScrollPosition, miscContentRect, false, miscContentHeight > miscViewRect.height);
 
                         float miscYPos = yPos;
@@ -1357,36 +1369,29 @@ namespace dark_cheat
                         UIHelper.Label("Select a player:", 0, miscYPos);
                         miscYPos += childIndent;
 
-                        // Calculate the actual height needed for the player list
                         float miscPlayerListItemHeight = 35;
                         float miscPlayerListContentHeight = playerNames.Count * miscPlayerListItemHeight;
-                        float miscPlayerListViewHeight = Math.Min(200, Math.Max(miscPlayerListContentHeight, 35)); // Min height of 35 for at least one row
+                        float miscPlayerListViewHeight = Math.Min(200, Math.Max(miscPlayerListContentHeight, 35));
 
                         playerScrollPosition = GUI.BeginScrollView(
-                            new Rect(0, miscYPos, 540, miscPlayerListViewHeight), 
-                            playerScrollPosition, 
-                            new Rect(0, 0, 520, miscPlayerListContentHeight), 
+                            new Rect(0, miscYPos, 540, miscPlayerListViewHeight),
+                            playerScrollPosition,
+                            new Rect(0, 0, 520, miscPlayerListContentHeight),
                             false, true);
                         for (int i = 0; i < playerNames.Count; i++)
                         {
-                            if (i == selectedPlayerIndex) GUI.color = Color.white;
-                            else GUI.color = Color.gray;
-                            if (GUI.Button(new Rect(0, i * miscPlayerListItemHeight, 520, 30), playerNames[i])) selectedPlayerIndex = i;
-                            GUI.color = Color.white;
+                            GUI.color = (i == selectedPlayerIndex) ? Color.white : Color.gray;
+                            if (GUI.Button(new Rect(0, i * miscPlayerListItemHeight, 520, 30), playerNames[i]))
+                                selectedPlayerIndex = i;
                         }
+                        GUI.color = Color.white;
                         GUI.EndScrollView();
                         miscYPos += miscPlayerListViewHeight + 15;
 
-                        if (UIHelper.Button("Force Mute", 0, miscYPos))
-                        {
-                            MiscFeatures.ForcePlayerMicVolume(-9999999);
-                        }
+                        if (UIHelper.Button("Force Mute", 0, miscYPos)) MiscFeatures.ForcePlayerMicVolume(-9999999);
                         miscYPos += parentSpacing;
 
-                        if (UIHelper.Button("Force High Volume", 0, miscYPos))
-                        {
-                            MiscFeatures.ForcePlayerMicVolume(9999999);
-                        }
+                        if (UIHelper.Button("Force High Volume", 0, miscYPos)) MiscFeatures.ForcePlayerMicVolume(9999999);
                         miscYPos += parentSpacing;
 
                         if (UIHelper.Button("Crash Lobby", 0, miscYPos))
@@ -1430,6 +1435,52 @@ namespace dark_cheat
                         }
                         miscYPos += parentSpacing;
 
+                        float fh_centerX = 270f;
+                        float fh_buttonWidth = 150f;
+                        float fh_buttonHeight = 30f;
+                        float fh_buttonSpacing = 10f;
+                        float fh_totalWidth = (fh_buttonWidth * 2) + fh_buttonSpacing;
+                        float fh_startX = fh_centerX - (fh_totalWidth / 2);
+
+                        // Draw "Force Host" button
+                        if (GUI.Button(new Rect(startX, miscYPos, fh_buttonWidth, fh_buttonHeight), "Force Host"))
+                        {
+                            ForceHost.Instance.StartCoroutine(ForceHost.Instance.ForceStart(availableLevels[selectedLevelIndex]));
+                        }
+
+                        // Draw dropdown toggle button
+                        if (GUI.Button(new Rect(startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, fh_buttonHeight), availableLevels[selectedLevelIndex]))
+                        {
+                            showLevelDropdown = !showLevelDropdown;
+                        }
+                        miscYPos += fh_buttonHeight + 5f;
+
+                        // Dropdown menu
+                        if (showLevelDropdown)
+                        {
+                            int itemHeight = 25;
+                            int maxVisibleItems = 6;
+                            int visibleItems = Mathf.Min(availableLevels.Length, maxVisibleItems);
+                            float dropdownHeight = visibleItems * itemHeight;
+
+                            Rect dropdownRect = new Rect(startX + fh_buttonWidth + fh_buttonSpacing, miscYPos, fh_buttonWidth, dropdownHeight);
+                            Rect dropdownContentRect = new Rect(0, 0, fh_buttonWidth - 20, availableLevels.Length * itemHeight);
+
+                            levelDropdownScroll = GUI.BeginScrollView(dropdownRect, levelDropdownScroll, dropdownContentRect, false, true);
+                            for (int i = 0; i < availableLevels.Length; i++)
+                            {
+                                if (GUI.Button(new Rect(0, i * itemHeight, fh_buttonWidth - 20, itemHeight), availableLevels[i]))
+                                {
+                                    selectedLevelIndex = i;
+                                    showLevelDropdown = false;
+                                }
+                            }
+                            GUI.EndScrollView();
+
+                            miscYPos += dropdownHeight + 5f;
+                        }
+
+                        miscYPos += parentSpacing;
                         GUI.EndScrollView();
                         break;
 
