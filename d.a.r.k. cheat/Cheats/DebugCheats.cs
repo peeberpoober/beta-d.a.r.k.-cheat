@@ -88,6 +88,11 @@ namespace dark_cheat
         private static Material itemVisibleMaterial;
         private static Material itemHiddenMaterial;
         private static Dictionary<Renderer, Material[]> enemyOriginalMaterials = new Dictionary<Renderer, Material[]>();
+
+        public static Color enemyVisibleColor = new Color(0f, 0.5f, 0.1f, 1f); // Default: Green
+        public static Color enemyHiddenColor = new Color(0.4f, 0.04f, 0.2f, 0.5f); // Default: Pink
+        public static Color itemVisibleColor = new Color(0.6f, 0.6f, 0f, 0.85f); // Default: Yellow
+        public static Color itemHiddenColor = new Color(0.6f, 0.3f, 0f, 0.4f); // Default: Orange
         private static Dictionary<Renderer, Material[]> itemOriginalMaterials = new Dictionary<Renderer, Material[]>();
         private static bool cachedOriginalCamera = false;
         private static float originalFarClipPlane = 0f;
@@ -800,7 +805,7 @@ namespace dark_cheat
                     hiddenMaterial.SetInt("_Cull", 0);
                     hiddenMaterial.SetInt("_ZTest", 8);
                     hiddenMaterial.SetInt("_ZWrite", 0);
-                    hiddenMaterial.SetColor("_Color", new Color(0.4f, 0.04f, 0.2f, 0.5f)); // Enemy - Pink
+                    hiddenMaterial.SetColor("_Color", enemyHiddenColor);
                     hiddenMaterial.renderQueue = 4000;
                     hiddenMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
                     hiddenMaterial.EnableKeyword("_EMISSION");
@@ -811,11 +816,17 @@ namespace dark_cheat
                     visibleMaterial.SetInt("_Cull", 0);
                     visibleMaterial.SetInt("_ZTest", 4);
                     visibleMaterial.SetInt("_ZWrite", 0);
-                    visibleMaterial.SetColor("_Color", new Color(0f, 0.5f, 0.1f, 1f)); // Enemy - Green
+                    visibleMaterial.SetColor("_Color", enemyVisibleColor);
                     visibleMaterial.renderQueue = 4001;
                     visibleMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
                     visibleMaterial.EnableKeyword("_EMISSION");
                 }
+            }
+            else
+            {
+                // Update colors if materials already exist
+                if (hiddenMaterial) hiddenMaterial.SetColor("_Color", enemyHiddenColor);
+                if (visibleMaterial) visibleMaterial.SetColor("_Color", enemyVisibleColor);
             }
 
             if (!itemVisibleMaterial || !itemHiddenMaterial)
@@ -829,7 +840,7 @@ namespace dark_cheat
                     itemHiddenMaterial.SetInt("_Cull", 0);
                     itemHiddenMaterial.SetInt("_ZTest", 8);
                     itemHiddenMaterial.SetInt("_ZWrite", 0);
-                    itemHiddenMaterial.SetColor("_Color", new Color(0.6f, 0.3f, 0f, 0.4f)); // orange
+                    itemHiddenMaterial.SetColor("_Color", itemHiddenColor);
                     itemHiddenMaterial.renderQueue = 4000;
 
                     itemVisibleMaterial = new Material(chamsShader);
@@ -838,9 +849,15 @@ namespace dark_cheat
                     itemVisibleMaterial.SetInt("_Cull", 0);
                     itemVisibleMaterial.SetInt("_ZTest", 4);
                     itemVisibleMaterial.SetInt("_ZWrite", 0);
-                    itemVisibleMaterial.SetColor("_Color", new Color(0.6f, 0.6f, 0f, 0.85f)); // yellow
+                    itemVisibleMaterial.SetColor("_Color", itemVisibleColor);
                     itemVisibleMaterial.renderQueue = 4001;
                 }
+            }
+            else
+            {
+                // Update colors if materials already exist
+                if (itemHiddenMaterial) itemHiddenMaterial.SetColor("_Color", itemHiddenColor);
+                if (itemVisibleMaterial) itemVisibleMaterial.SetColor("_Color", itemVisibleColor);
             }
 
             if (drawChamsBool)
@@ -926,48 +943,6 @@ namespace dark_cheat
 
             }
 
-            // === ITEM CHAMS ===
-            if (drawItemChamsBool)
-            {
-                foreach (var valuableObject in valuableObjects)
-                {
-                    if (valuableObject == null) continue;
-
-                    var transform = valuableObject.GetType().GetProperty("transform", BindingFlags.Public | BindingFlags.Instance)?.GetValue(valuableObject) as Transform;
-                    if (transform == null || !transform.gameObject.activeInHierarchy) continue;
-
-                    var renderers = transform.GetComponentsInChildren<Renderer>(true);
-                    foreach (var renderer in renderers)
-                    {
-                        if (renderer == null || !renderer.gameObject.activeInHierarchy) continue;
-
-                        if (!itemOriginalMaterials.ContainsKey(renderer))
-                        {
-                            itemOriginalMaterials[renderer] = renderer.materials;
-                        }
-
-                        renderer.materials = new Material[] { itemHiddenMaterial, itemVisibleMaterial };
-                    }
-                }
-
-                Camera mainCamera = Camera.main;
-                if (mainCamera != null)
-                {
-                    if (!cachedOriginalCamera)
-                    {
-                        originalFarClipPlane = mainCamera.farClipPlane;
-                        originalDepthTextureMode = mainCamera.depthTextureMode;
-                        originalOcclusionCulling = mainCamera.useOcclusionCulling;
-                        cachedOriginalCamera = true;
-                    }
-
-                    mainCamera.farClipPlane = 500f;
-
-                    mainCamera.depthTextureMode = DepthTextureMode.None;
-
-                    mainCamera.useOcclusionCulling = false;
-                }
-            }
             if (drawEspBool)
             {
                 foreach (var enemyInstance in enemyList)

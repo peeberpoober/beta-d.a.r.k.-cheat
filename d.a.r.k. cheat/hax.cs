@@ -34,6 +34,7 @@ namespace dark_cheat
         {
             Rect rect = NextControlRect(customX, customY);
             rect.height = 20f;
+            rect.width = 200f;
             return GUI.Toggle(rect, value, text);
         }
 
@@ -187,6 +188,8 @@ namespace dark_cheat
         private bool initialized = false;
         private static Dictionary<Color, Texture2D> solidTextures = new Dictionary<Color, Texture2D>();
 
+        private bool showColorPicker = false;
+        private int selectedColorOption = 0; // 0: Enemy Visible, 1: Enemy Hidden, 2: Item Visible, 3: Item Hidden
         private enum MenuCategory { Self, ESP, Combat, Misc, Enemies, Items, Hotkeys }
         private MenuCategory currentCategory = MenuCategory.Self;
 
@@ -970,6 +973,7 @@ namespace dark_cheat
                             espYPos += childSpacing;
                             DebugCheats.showEnemyHP = UIHelper.Checkbox("Health", DebugCheats.showEnemyHP, 20, espYPos);
                             espYPos += childSpacing;
+                            
                         }
 
                         // Item ESP section
@@ -983,6 +987,7 @@ namespace dark_cheat
                             espYPos += childSpacing;
                             DebugCheats.showItemNames = UIHelper.Checkbox("Names", DebugCheats.showItemNames, 20, espYPos);
                             espYPos += childSpacing;
+                            
                             DebugCheats.showItemDistance = UIHelper.Checkbox("Distance", DebugCheats.showItemDistance, 20, espYPos);
                             espYPos += childSpacing;
 
@@ -1013,6 +1018,105 @@ namespace dark_cheat
 
                             DebugCheats.showPlayerDeathHeads = UIHelper.Checkbox("Dead Player Heads", DebugCheats.showPlayerDeathHeads, 20, espYPos);
                             espYPos += childSpacing;
+                        }
+                        
+                        // Chams Color Picker Section
+                        if (DebugCheats.drawChamsBool || DebugCheats.drawItemChamsBool)
+                        {
+                            if (GUI.Button(new Rect(0, espYPos, 200, 30), "Configure Chams Colors"))
+                            {
+                                showColorPicker = !showColorPicker;
+                            }
+                            espYPos += parentSpacing;
+
+                            float currentY = 10;
+                            
+                            if (showColorPicker)
+                            {
+                                // Color option selection
+                                GUI.Label(new Rect(280, currentY, 200, 20), "         Select color to modify:", GUI.skin.label);
+                                currentY += childIndent;
+                                
+                                string[] colorOptions = new string[] {
+                                    "Enemy Visible", 
+                                    "Enemy Hidden", 
+                                    "Item Visible", 
+                                    "Item Hidden"
+                                };
+                                
+                                for (int i = 0; i < colorOptions.Length; i++)
+                                {
+                                    bool isSelected = selectedColorOption == i;
+                                    GUIStyle optionStyle = new GUIStyle(GUI.skin.button);
+                                    
+                                    // Get the current color for preview
+                                    Color previewColor;
+                                    switch (i)
+                                    {
+                                        case 0: previewColor = DebugCheats.enemyVisibleColor; break;
+                                        case 1: previewColor = DebugCheats.enemyHiddenColor; break;
+                                        case 2: previewColor = DebugCheats.itemVisibleColor; break;
+                                        case 3: previewColor = DebugCheats.itemHiddenColor; break;
+                                        default: previewColor = Color.white; break;
+                                    }
+                                    
+                                    // Set button background to the current color
+                                    optionStyle.normal.background = MakeSolidBackground(previewColor, 1f);
+                                    optionStyle.normal.textColor = GetContrastColor(previewColor);
+                                    
+                                    if (GUI.Button(new Rect(285, currentY, 200, 30), colorOptions[i], optionStyle))
+                                    {
+                                        selectedColorOption = i;
+                                    }
+                                    currentY += childSpacing;
+                                }
+                                currentY += childIndent;
+
+                                // Get the current color based on selection
+                                Color currentColor;
+                                switch (selectedColorOption)
+                                {
+                                    case 0: currentColor = DebugCheats.enemyVisibleColor; break;
+                                    case 1: currentColor = DebugCheats.enemyHiddenColor; break;
+                                    case 2: currentColor = DebugCheats.itemVisibleColor; break;
+                                    case 3: currentColor = DebugCheats.itemHiddenColor; break;
+                                    default: currentColor = Color.white; break;
+                                }
+                                
+                                // RGB sliders
+                                GUI.Label(new Rect(285, currentY, 200, 20), "Red:", GUI.skin.label);
+                                currentY += childIndent;
+                                float r = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.r, 0f, 1f);
+                                currentY += childSpacing;
+                                
+                                GUI.Label(new Rect(285, currentY, 200, 20), "Green:", GUI.skin.label);
+                                currentY += childIndent;
+                                float g = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.g, 0f, 1f);
+                                currentY += childSpacing;
+                                
+                                GUI.Label(new Rect(285, currentY, 200, 20), "Blue:", GUI.skin.label);
+                                currentY += childIndent;
+                                float b = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.b, 0f, 1f);
+                                currentY += childSpacing;
+                                
+                                GUI.Label(new Rect(285, currentY, 200, 20), "Opacity:", GUI.skin.label);
+                                currentY += childIndent;
+                                float a = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.a, 0f, 1f);
+                                currentY += childSpacing;
+                                
+                                // Update the color if any slider changed
+                                Color newColor = new Color(r, g, b, a);
+                                if (newColor != currentColor)
+                                {
+                                    switch (selectedColorOption)
+                                    {
+                                        case 0: DebugCheats.enemyVisibleColor = newColor; break;
+                                        case 1: DebugCheats.enemyHiddenColor = newColor; break;
+                                        case 2: DebugCheats.itemVisibleColor = newColor; break;
+                                        case 3: DebugCheats.itemHiddenColor = newColor; break;
+                                    }
+                                }
+                            }
                         }
 
                         // Extraction ESP section
@@ -1490,7 +1594,7 @@ namespace dark_cheat
                         {
                             if (i == selectedItemIndex) GUI.color = Color.white;
                             else GUI.color = Color.gray;
-                            if (GUI.Button(new Rect(0, i * itemListItemHeight, 520, 30), $"{itemList[i].Name} [Value: {itemList[i].Value}$]"))
+                            if (GUI.Button(new Rect(0, i * itemListItemHeight, 520, 30), $"{itemList[i].Name} [Value: ${itemList[i].Value}]"))
                             {
                                 selectedItemIndex = i;
                             }
@@ -1808,9 +1912,20 @@ namespace dark_cheat
                 Texture2D texture = new Texture2D(1, 1);
                 texture.SetPixel(0, 0, key);
                 texture.Apply();
-                solidTextures[color] = texture;
+                solidTextures[key] = texture;
             }
-            return solidTextures[color];
+            return solidTextures[key];
+        }
+        
+        // Helper method to get a contrasting color for text based on background color
+        private Color GetContrastColor(Color backgroundColor)
+        {
+            // Calculate perceived brightness using the formula: 
+            // (0.299*R + 0.587*G + 0.114*B)
+            float brightness = (0.299f * backgroundColor.r + 0.587f * backgroundColor.g + 0.114f * backgroundColor.b);
+            
+            // Return white for dark backgrounds, black for light backgrounds
+            return brightness < 0.5f ? Color.white : Color.black;
         }
 
     }
