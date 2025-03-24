@@ -102,7 +102,7 @@ namespace dark_cheat
                         continue;
                     }
 
-                    photonView.RPC("AddToStatsManagerRPC", RpcTarget.All, originalName, "472644");
+                    photonView.RPC("AddToStatsManagerRPC", RpcTarget.AllBuffered, originalName, "472644");
                     DLog.Log($"Restored original name '{originalName}' for {playerName}");
                 }
             }
@@ -143,7 +143,7 @@ namespace dark_cheat
                     continue;
                 }
 
-                photonView.RPC("AddToStatsManagerRPC", RpcTarget.All, spoofName, "472644");
+                photonView.RPC("AddToStatsManagerRPC", RpcTarget.AllBuffered, spoofName, "472644");
                 DLog.Log($"Sent spoof name '{spoofName}' to {playerName}.");
             }
         }
