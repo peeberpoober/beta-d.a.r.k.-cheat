@@ -1216,8 +1216,7 @@ namespace dark_cheat
                         UIHelper.Label("Select a player:", 0, combatYPos);
                         combatYPos += childIndent;
 
-                        // Calculate the actual height needed for the player list
-                        float playerListItemHeight = 35;
+                        float playerListItemHeight = 35; // Calculate the actual height needed for the player list
                         float playerListContentHeight = playerNames.Count * playerListItemHeight;
                         float playerListViewHeight = Math.Min(200, Math.Max(playerListContentHeight, 35)); // Min height of 35 for at least one row
 
@@ -1271,6 +1270,9 @@ namespace dark_cheat
                         combatYPos += parentSpacing;
 
                         if (UIHelper.Button("Tumble", 0, combatYPos)) { Players.ForcePlayerTumble(); DLog.Log("Player tumbled: " + playerNames[selectedPlayerIndex]); }
+                        combatYPos += parentSpacing;
+
+                        if (UIHelper.Button("Kick Player", 0, combatYPos)) { MiscFeatures.CrashSelectedPlayerNew(); DLog.Log("Attempting to crash player: " + playerNames[selectedPlayerIndex]); }
                         combatYPos += parentSpacing;
 
                         if (UIHelper.Button(showTeleportUI ? "Hide Teleport Options" : "Teleport Options", 0, combatYPos))
