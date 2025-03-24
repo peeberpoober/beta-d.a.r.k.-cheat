@@ -415,6 +415,7 @@
     <Compile Include="Utils\CursorController.cs" />
     <Compile Include="Utils\DebugController.cs" />
     <Compile Include="Utils\disablemethod.cs" />
+    <Compile Include="Utils\EnemySpawner.cs" />
     <Compile Include="Utils\forcehost.cs" />
     <Compile Include="Utils\FOVeditor.cs" />
     <Compile Include="Utils\GameHelper.cs" />
