@@ -556,14 +556,14 @@ namespace dark_cheat
             }
 
             Hax2.sliderValue = GetFloat("SprintSpeed", 5f);
-            Hax2.sliderValueStrength = GetFloat("grabStrength", 0f);
-            Hax2.throwStrength = GetFloat("throwStrength", 0f);
+            Hax2.sliderValueStrength = GetFloat("grabStrength", 1f);
+            Hax2.throwStrength = GetFloat("throwStrength", 1f);
             Hax2.grabRange = GetFloat("grabRange", 5f);
             Hax2.jumpForce = GetFloat("JumpForce", 10f);
             Hax2.crouchSpeed = GetFloat("CrouchSpeed", 3f);
             Hax2.crouchDelay = GetFloat("CrouchTimeMin", 0.2f);
             Hax2.customGravity = GetFloat("CustomGravity", 9.81f);
-            Hax2.extraJumps = GetInt("JumpExtra", 0);
+            Hax2.extraJumps = GetInt("JumpExtra", 1); // oops - we cant set this 0 as int
             Hax2.flashlightIntensity = 1f;
 
             Hax2.fieldOfView = 70f;
