@@ -1767,8 +1767,8 @@ namespace dark_cheat
                                 }
                             }
                         }
-
-                        // --- SPAWN UI SECTION ---
+/*
+                        // --- SPAWN UI SECTION --- // COMMENTED OUT - TOO UNSTABLE
                         float spawnButtonWidth = 100;
                         float spawnCountTextBoxWidth = 50;
                         float spawnDropdownWidth = 200;
@@ -1906,7 +1906,7 @@ namespace dark_cheat
                             GUI.EndScrollView();
                             enemyYPos += dropdownHeight;
                         }
-
+*/
                         GUI.EndScrollView();
                         break;
 
