@@ -131,6 +131,8 @@ namespace dark_cheat
 
     public class Hax2 : MonoBehaviour
     {
+        private static List<EnemySetup> cachedFilteredEnemySetups = null;
+        private static List<string> cachedEnemySetupNames = null;
         public string spawnCountText = "1";  // Default value for number of enemies to spawn.
         public int spawnEnemyIndex = 0;
         public bool showSpawnDropdown = false;
@@ -1766,39 +1768,47 @@ namespace dark_cheat
                             }
                         }
 
-                        float spawnButtonWidth = 100; // --- SPAWN UI SECTION ---
+                        // --- SPAWN UI SECTION ---
+                        float spawnButtonWidth = 100;
                         float spawnCountTextBoxWidth = 50;
                         float spawnDropdownWidth = 200;
                         float gap = 10;
 
-                        List<EnemySetup> enemySetups = new List<EnemySetup>();
-                        List<EnemySetup> enemies1, enemies2, enemies3; // Build a list of available EnemySetup blueprints by combining difficulties.
-                        if (EnemySpawner.TryGetEnemyLists(out enemies1, out enemies2, out enemies3))
+                        // Build and cache the enemy blueprint lists only once.
+                        if (cachedFilteredEnemySetups == null || cachedEnemySetupNames == null)
                         {
-                            enemySetups.AddRange(enemies1);
-                            enemySetups.AddRange(enemies2);
-                            enemySetups.AddRange(enemies3);
-                        }
-
-                        List<EnemySetup> filteredEnemySetups = new List<EnemySetup>();
-                        List<string> enemySetupNames = new List<string>();
-                        foreach (var setup in enemySetups) // Filter the list: remove any whose name contains "Enemy Group", and remove "Enemy -" prefix.
-                        {
-                            if (setup.name.Contains("Enemy Group"))
-                                continue;
-
-                            string displayName = setup.name;
-                            if (displayName.StartsWith("Enemy -"))
+                            List<EnemySetup> enemySetups = new List<EnemySetup>();
+                            List<EnemySetup> enemies1, enemies2, enemies3;
+                            if (EnemySpawner.TryGetEnemyLists(out enemies1, out enemies2, out enemies3))
                             {
-                                displayName = displayName.Substring("Enemy -".Length).Trim();
+                                enemySetups.AddRange(enemies1);
+                                enemySetups.AddRange(enemies2);
+                                enemySetups.AddRange(enemies3);
                             }
-                            filteredEnemySetups.Add(setup);
-                            enemySetupNames.Add(displayName);
+                            // Filter the list: remove any whose name contains "Enemy Group", and remove "Enemy -" prefix.
+                            cachedFilteredEnemySetups = new List<EnemySetup>();
+                            cachedEnemySetupNames = new List<string>();
+                            foreach (var setup in enemySetups)
+                            {
+                                if (setup.name.Contains("Enemy Group"))
+                                    continue;
+
+                                string displayName = setup.name;
+                                if (displayName.StartsWith("Enemy -"))
+                                {
+                                    displayName = displayName.Substring("Enemy -".Length).Trim();
+                                }
+                                cachedFilteredEnemySetups.Add(setup);
+                                cachedEnemySetupNames.Add(displayName);
+                            }
                         }
 
+                        // Layout: [Spawn Button] [Integer Text Box] [Dropdown Button]
+
+                        // Spawn Button
                         Rect spawnButtonRect = new Rect(0, enemyYPos, spawnButtonWidth, 25);
                         if (UIHelper.Button("Spawn", spawnButtonRect.x, enemyYPos, spawnButtonWidth, 25))
-                        { // Spawn Button
+                        {
                             LevelGenerator levelGenerator = UnityEngine.Object.FindObjectOfType<LevelGenerator>();
                             if (levelGenerator == null)
                             {
@@ -1815,24 +1825,26 @@ namespace dark_cheat
                                 {
                                     Vector3 spawnPosition = localPlayer.transform.position + Vector3.up * 1.5f;
 
+                                    // Filter input: allow only numbers and limit to 2 characters.
                                     spawnCountText = System.Text.RegularExpressions.Regex.Replace(spawnCountText, "[^0-9]", "");
-                                    if (spawnCountText.Length > 2) // Filter input: allow only numbers and limit to 2 characters.
+                                    if (spawnCountText.Length > 2)
                                         spawnCountText = spawnCountText.Substring(0, 2);
 
-                                    int spawnCount = 1; // Parse the number; default to 1 if parsing fails.
+                                    // Parse the number; default to 1 if parsing fails.
+                                    int spawnCount = 1;
                                     if (!int.TryParse(spawnCountText, out spawnCount))
                                     {
                                         spawnCount = 1;
                                     }
-                                    spawnCount = Mathf.Clamp(spawnCount, 1, 99); // Clamp the value to the range 1-99.
+                                    spawnCount = Mathf.Clamp(spawnCount, 1, 99);
 
-                                    if (spawnEnemyIndex >= 0 && spawnEnemyIndex < filteredEnemySetups.Count)
+                                    if (spawnEnemyIndex >= 0 && spawnEnemyIndex < cachedFilteredEnemySetups.Count)
                                     {
                                         for (int i = 0; i < spawnCount; i++)
                                         {
-                                            EnemySpawner.SpawnSpecificEnemy(levelGenerator, filteredEnemySetups[spawnEnemyIndex], spawnPosition);
+                                            EnemySpawner.SpawnSpecificEnemy(levelGenerator, cachedFilteredEnemySetups[spawnEnemyIndex], spawnPosition);
                                         }
-                                        DLog.Log($"Spawn triggered for {spawnCount} enemy(ies): {enemySetupNames[spawnEnemyIndex]}");
+                                        DLog.Log($"Spawn triggered for {spawnCount} enemy(ies): {cachedEnemySetupNames[spawnEnemyIndex]}");
                                     }
                                     else
                                     {
@@ -1842,44 +1854,50 @@ namespace dark_cheat
                             }
                         }
 
+                        // Textbox for number of enemies to spawn.
                         Rect spawnCountTextRect = new Rect(spawnButtonRect.x + spawnButtonWidth + gap, enemyYPos, spawnCountTextBoxWidth, 25);
-                        spawnCountText = GUI.TextField(spawnCountTextRect, spawnCountText); // Textbox for number of enemies to spawn.
+                        spawnCountText = GUI.TextField(spawnCountTextRect, spawnCountText); // Accepts only numbers due to filtering above.
 
+                        // Dropdown Button for selecting the enemy blueprint.
                         Rect spawnDropdownButtonRect = new Rect(spawnCountTextRect.x + spawnCountTextBoxWidth + gap, enemyYPos, spawnDropdownWidth, 25);
-                        string spawnDropdownText = (spawnEnemyIndex >= 0 && spawnEnemyIndex < enemySetupNames.Count) ?
-                                                   enemySetupNames[spawnEnemyIndex] : "Select enemy";
-                        if (GUI.Button(spawnDropdownButtonRect, spawnDropdownText)) // Dropdown Button for selecting the enemy blueprint.
+                        string spawnDropdownText = (spawnEnemyIndex >= 0 && spawnEnemyIndex < cachedEnemySetupNames.Count) ?
+                                                   cachedEnemySetupNames[spawnEnemyIndex] : "Select enemy";
+                        if (GUI.Button(spawnDropdownButtonRect, spawnDropdownText))
                         {
                             showSpawnDropdown = !showSpawnDropdown;
                         }
                         enemyYPos += 25;  // Advance past the top row of controls.
 
-                        if (showSpawnDropdown) // Expanded Dropdown List (if toggled open).
+                        // Expanded Dropdown List (if toggled open).
+                        if (showSpawnDropdown)
                         {
                             int itemHeight = 25;
                             int maxVisibleItems = 6;
-                            int visibleItems = Math.Min(enemySetupNames.Count, maxVisibleItems);
+                            int visibleItems = Math.Min(cachedEnemySetupNames.Count, maxVisibleItems);
                             float dropdownHeight = visibleItems * itemHeight;
 
-                            float vScrollbarWidth = (enemySetupNames.Count * itemHeight > dropdownHeight) ? 16f : 0f; // Determine if a vertical scrollbar is needed.
+                            // Determine if a vertical scrollbar is needed.
+                            float vScrollbarWidth = (cachedEnemySetupNames.Count * itemHeight > dropdownHeight) ? 16f : 0f;
 
+                            // Draw the dropdown list directly below the dropdown button, aligned with it.
                             Rect spawnDropdownListRect = new Rect(spawnDropdownButtonRect.x, enemyYPos, spawnDropdownWidth, dropdownHeight);
-                            Rect spawnViewRect = new Rect(0, 0, spawnDropdownWidth - vScrollbarWidth, enemySetupNames.Count * itemHeight);
-                            spawnDropdownScrollPosition = GUI.BeginScrollView( // Draw the dropdown list directly below the dropdown button, aligned with it.
+                            Rect spawnViewRect = new Rect(0, 0, spawnDropdownWidth - vScrollbarWidth, cachedEnemySetupNames.Count * itemHeight);
+                            spawnDropdownScrollPosition = GUI.BeginScrollView(
                                 spawnDropdownListRect,
                                 spawnDropdownScrollPosition,
                                 spawnViewRect,
                                 false, false
                             );
 
+                            // Create a centered GUIStyle for the dropdown buttons.
                             GUIStyle centeredStyle = new GUIStyle(GUI.skin.button)
-                            { // Create a centered GUIStyle for the dropdown buttons.
+                            {
                                 alignment = TextAnchor.MiddleCenter
                             };
 
-                            for (int i = 0; i < enemySetupNames.Count; i++)
+                            for (int i = 0; i < cachedEnemySetupNames.Count; i++)
                             {
-                                if (GUI.Button(new Rect(0, i * itemHeight, spawnDropdownWidth - vScrollbarWidth, itemHeight), enemySetupNames[i], centeredStyle))
+                                if (GUI.Button(new Rect(0, i * itemHeight, spawnDropdownWidth - vScrollbarWidth, itemHeight), cachedEnemySetupNames[i], centeredStyle))
                                 {
                                     spawnEnemyIndex = i;
                                     showSpawnDropdown = false;
