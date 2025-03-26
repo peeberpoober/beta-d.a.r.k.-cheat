@@ -424,6 +424,7 @@
     <Compile Include="Utils\MapTools.cs" />
     <Compile Include="Utils\ChatHijack.cs" />
     <Compile Include="Utils\PlayerCheatSync.cs" />
+    <Compile Include="Utils\PlayerReflectionCache.cs" />
     <Compile Include="Utils\StrengthDebug.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
