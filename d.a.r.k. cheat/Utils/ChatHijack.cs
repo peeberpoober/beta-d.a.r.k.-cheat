@@ -43,23 +43,25 @@ namespace dark_cheat
 
         public static void ToggleNameSpoofing(bool enable, string spoofName, string targetName, List<object> playerList, List<string> playerNames)
         {
-            if (enable && !isSpoofingActive) // Toggle name spoofing on/off
+            if (enable)
             {
-                StoreOriginalNames(playerList, playerNames); // Store original names before applying spoof
+                if (!isSpoofingActive)
+                {
+                    StoreOriginalNames(playerList, playerNames); // Store original names before applying spoof
+                    isSpoofingActive = true;
+                }
 
                 SendCustomNameRPC(spoofName, targetName, playerList, playerNames); // Apply the spoof name
-
-                isSpoofingActive = true;
                 DLog.Log($"Name spoofing enabled for {targetName}");
             }
-            else if (!enable && isSpoofingActive)
+            else if (isSpoofingActive)
             {
                 RestoreOriginalNames(targetName, playerList, playerNames); // Restore original names
-
                 isSpoofingActive = false;
                 DLog.Log("Name spoofing disabled, original names restored");
             }
         }
+
         private static void StoreOriginalNames(List<object> playerList, List<string> playerNames)
         {
             for (int i = 0; i < playerList.Count; i++) // Store original player names before spoofing
