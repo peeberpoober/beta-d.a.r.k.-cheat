@@ -1553,15 +1553,15 @@ namespace dark_cheat
                         {
                             spoofNameEnabled = !spoofNameEnabled;
                             if (spoofNameEnabled)
-                            { // Use the toggle function with enable=true to store original names and apply spoof
+                            { // Enable spoofing
                                 ChatHijack.ToggleNameSpoofing(true, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
                                 DLog.Log("Spoofed name to " + spoofedNameText);
                             }
                             else
                             {
-                                ChatHijack.ToggleNameSpoofing(false, "", spoofTargetVisibleName, playerList, playerNames);
-                                spoofedNameText = ""; // Use the toggle function with enable=false to restore original names
-                                DLog.Log("Reset names to original and cleared text.");
+                                // Disable spoofing, but do NOT clear spoofedNameText.
+                                ChatHijack.ToggleNameSpoofing(false, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
+                                DLog.Log("Reset names to original. Spoof text retained: " + spoofedNameText);
                             }
                         }
                         GUI.color = Color.white;
