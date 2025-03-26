@@ -340,6 +340,9 @@ namespace dark_cheat
 
         private void PerformDelayedLevelUpdate()
         {
+            // Cache reflection data once on level change.
+            PlayerReflectionCache.CachePlayerControllerData();
+
             UpdatePlayerList();
             UpdateEnemyList();
 
@@ -351,10 +354,12 @@ namespace dark_cheat
                 Hax2.hasInitializedDefaults = true;
             }
 
+            // Now reapply all custom stat modifications using our optimized functions
             PlayerController.ReapplyAllStats();
 
             DLog.Log($"Level update -> Player list: {playerNames.Count} players, Enemy list: {enemyNames.Count} enemies");
         }
+
 
         public void Start()
         {
