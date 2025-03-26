@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using UnityEngine;
 using Photon.Pun;
@@ -126,7 +126,8 @@ namespace dark_cheat
                     Initialize();
                     return;
                 }
-                var colorIndex = new System.Random().Next(0, 30);
+                // Use the full range of colors (0-35)
+                var colorIndex = new System.Random().Next(0, 36);
                 try
                 {
                     playerSetColorMethod.Invoke(colorControllerInstance, new object[] { colorIndex });
@@ -145,11 +146,11 @@ namespace dark_cheat
         {
             if (view == null)
                 return false;
-                
+
             // Check if the PhotonView is still attached to an active GameObject
             if (view.gameObject == null || !view.gameObject.activeInHierarchy)
                 return false;
-                
+
             return view.ViewID != 0 && view.Owner != null;
         }
 
