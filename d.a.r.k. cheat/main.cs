@@ -1,106 +1,114 @@
-using HarmonyLib;
 using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using UnityEngine;
+using System.Collections;
 
 namespace dark_cheat
 {
     public class Loader
     {
-        private static Harmony harmonyInstance;
-
-        [HarmonyPatch(typeof(SpectateCamera), "PlayerSwitch")]
-        public static class SpectateCamera_PlayerSwitch_Patch
-        {
-            static bool Prefix(bool _next)
-            {
-                if (Hax2.showMenu)
-                {
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Input), "GetMouseButtonUp", new Type[] { typeof(int) })]
-        public class Patch_Input_GetMouseButtonUp
-        {
-            static bool Prefix(int button, ref bool __result)
-            {
-                if (Hax2.showMenu)
-                {
-                    __result = false;
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Input), "GetMouseButtonDown", new Type[] { typeof(int) })]
-        public class Patch_Input_GetMouseButtonDown
-        {
-            static bool Prefix(int button, ref bool __result)
-            {
-                if (Hax2.showMenu)
-                {
-                    __result = false;
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Input), "GetMouseButton", new Type[] { typeof(int) })]
-        public class Patch_Input_GetMouseButton
-        {
-            static bool Prefix(int button, ref bool __result)
-            {
-                if (Hax2.showMenu)
-                {
-                    __result = false;
-                    return false;
-                }
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(InputManager), nameof(InputManager.KeyDown))]
-        public class BlockChatKey
-        {
-            static bool Prefix(InputKey key, ref bool __result)
-            {
-                if (key == InputKey.Chat && Hax2.showMenu)
-                {
-                    __result = false;
-                    return false;
-                }
-                return true;
-            }
-        }
-
+        private static object harmonyInstance;
         private static GameObject Load;
 
         public static void Init()
         {
-            Load = new GameObject();
-            Load.AddComponent<Hax2>();
-            UnityEngine.Object.DontDestroyOnLoad(Load);
+            try
+            {
+                Directory.CreateDirectory("C:\\temp");
+                File.WriteAllText("C:\\temp\\inject_debug.txt", "Init() reached\n");
 
-            harmonyInstance = new Harmony("dark_cheat");
-            harmonyInstance.PatchAll();
+                AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+                {
+                    string resourceName = args.Name.Split(',')[0] + ".dll";
+                    var executingAssembly = Assembly.GetExecutingAssembly();
+                    string fullName = executingAssembly
+                        .GetManifestResourceNames()
+                        .FirstOrDefault(r => r.EndsWith(resourceName));
 
-            DLog.Log("Cheat loader initialized successfully!");
+                    if (fullName != null)
+                    {
+                        using (var stream = executingAssembly.GetManifestResourceStream(fullName))
+                        {
+                            if (stream != null)
+                            {
+                                byte[] buffer = new byte[stream.Length];
+                                stream.Read(buffer, 0, buffer.Length);
+                                return Assembly.Load(buffer);
+                            }
+                        }
+                    }
+
+                    return null;
+                };
+
+                Load = new GameObject();
+                Load.AddComponent<Hax2>();
+                UnityEngine.Object.DontDestroyOnLoad(Load);
+                Load.AddComponent<PatchDelay>();
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText("C:\\temp\\inject_error.txt", ex.ToString());
+            }
+        }
+
+        public static IEnumerator DelayedPatchRoutine()
+        {
+            while (Type.GetType("SpectateCamera, Assembly-CSharp") == null ||
+                   Type.GetType("InputManager, Assembly-CSharp") == null)
+            {
+                yield return new WaitForSeconds(0.5f);
+                File.AppendAllText("C:\\temp\\inject_debug.txt", "Waiting for types...\n");
+            }
+
+            try
+            {
+                File.AppendAllText("C:\\temp\\inject_debug.txt", "Types found, creating Harmony...\n");
+                var harmony = new HarmonyLib.Harmony("dark_cheat");
+                harmony.PatchAll(typeof(Patches).Assembly);
+                File.AppendAllText("C:\\temp\\inject_debug.txt", "Harmony patches applied successfully\n");
+            }
+            catch (Exception ex)
+            {
+                File.AppendAllText("C:\\temp\\inject_debug.txt", "Harmony error: " + ex.ToString() + "\n");
+            }
         }
 
         public static void UnloadCheat()
         {
-            UnityEngine.Object.Destroy(Load);
-            if (harmonyInstance != null)
+            try
             {
-                // Do not use UnpatchAll, cause it can break mods
-                harmonyInstance.UnpatchSelf();
-            }
+                if (Load != null)
+                {
+                    UnityEngine.Object.Destroy(Load);
+                    Load = null;
+                }
 
-            System.GC.Collect();
+                if (harmonyInstance != null)
+                {
+                    var harmonyType = harmonyInstance.GetType();
+                    var unpatchSelf = harmonyType.GetMethod("UnpatchSelf");
+                    unpatchSelf?.Invoke(harmonyInstance, null);
+                    harmonyInstance = null;
+                }
+
+                GC.Collect();
+                File.AppendAllText("C:\\temp\\inject_debug.txt", "UnloadCheat() completed\n");
+            }
+            catch (Exception ex)
+            {
+                File.WriteAllText("C:\\temp\\unload_error.txt", ex.ToString());
+            }
+        }
+    }
+
+    public class PatchDelay : MonoBehaviour
+    {
+        private void Start()
+        {
+            StartCoroutine(Loader.DelayedPatchRoutine());
         }
     }
 }
