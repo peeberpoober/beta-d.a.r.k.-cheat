@@ -1,10 +1,14 @@
-/* // COMMENTED OUT --- TOO UNSTABLE. NEEDS WORK.
 using Photon.Pun;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-
+// NOTE: This will cause errors for trying to access "1007" player index, while it doesnt exist.
+// The base issue is that it "sees" the player, but immediately is out of range when the vision method is called.
+// I believe the reason this happens is because it gets 'fake' teleported to the player on spawn, and immediately gets a new position.
+// If this causes problems in the future, a potential fix would be to pre-assign an initial spawn point that isnt the local player. Preferably one away from any players.
+// For the timebeing, this does not appear to have any real impact, outside of sending scary red text in console when spawning the enemy.
+// tdlr: '1007' errors have no impact on performance or functionality, and have been intentionally left in.
 namespace dark_cheat.Utils
 {
     public static class EnemySpawner
@@ -111,14 +115,80 @@ namespace dark_cheat.Utils
                     return;
                 }
 
-                enemySpawnMethod.Invoke(levelGenerator, new object[] { enemySetup, position });
-                Debug.Log("Successfully spawned specific enemy type!");
+                // Spawn the enemy
+                var spawnedEnemy = enemySpawnMethod.Invoke(levelGenerator, new object[] { enemySetup, position });
+                if (spawnedEnemy == null)
+                {
+                    Debug.Log("Failed to spawn enemy!");
+                    return;
+                }
+
+                // Get the Enemy component
+                var enemyType = Type.GetType("Enemy, Assembly-CSharp");
+                var enemyComponent = (spawnedEnemy as GameObject)?.GetComponent(enemyType);
+                if (enemyComponent == null)
+                {
+                    Debug.Log("Enemy component not found on spawned object!");
+                    return;
+                }
+
+                // Initialize vision system
+                var visionType = Type.GetType("EnemyVision, Assembly-CSharp");
+                var visionComponent = (spawnedEnemy as GameObject)?.GetComponent(visionType);
+                if (visionComponent != null)
+                {
+                    // Get the vision trigger method
+                    var visionTriggerMethod = visionType.GetMethod("VisionTrigger", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (visionTriggerMethod != null)
+                    {
+                        // Get local player
+                        var localPlayer = PhotonNetwork.LocalPlayer;
+                        if (localPlayer != null)
+                        {
+                            // Get PlayerAvatar from cache
+                            var playerAvatar = PlayerReflectionCache.PlayerAvatarScriptInstance;
+                            if (playerAvatar != null)
+                            {
+                                // Get the player dictionary field from EnemyVision
+                                var playerDictField = visionType.GetField("playerDict", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (playerDictField != null)
+                                {
+                                    var playerDict = playerDictField.GetValue(visionComponent) as Dictionary<int, object>;
+                                    if (playerDict != null)
+                                    {
+                                        // Add the player to the dictionary if not already present
+                                        if (!playerDict.ContainsKey(localPlayer.ActorNumber))
+                                        {
+                                            playerDict.Add(localPlayer.ActorNumber, playerAvatar);
+                                        }
+
+                                        // Now call VisionTrigger with proper parameters
+                                        visionTriggerMethod.Invoke(visionComponent, new object[] {
+                                            localPlayer.ActorNumber,
+                                            playerAvatar,
+                                            false, // culled
+                                            true   // playerNear
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Initialize enemy state
+                var enemyStateField = enemyType.GetField("state", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (enemyStateField != null)
+                {
+                    enemyStateField.SetValue(enemyComponent, 0); // Set to idle state
+                }
+
+                Debug.Log("Successfully spawned and initialized enemy!");
             }
             catch (Exception e)
             {
-                Debug.Log($"Error in SpawnSpecificEnemy: {e.Message}");
+                Debug.Log($"Error in SpawnSpecificEnemy: {e.Message}\n{e.StackTrace}");
             }
         }
     }
 }
-*/
