@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System.Linq;
 using UnityEngine;
 
 namespace dark_cheat
@@ -55,6 +56,89 @@ namespace dark_cheat
                     return false;
                 }
                 return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(EnemyVision), nameof(EnemyVision.VisionTrigger))]
+        public static class EnemyVision_BlindEnemies_Patch
+        {
+            static bool Prefix(int playerID, PlayerAvatar player, bool culled, bool playerNear)
+            {
+                if (!Hax2.blindEnemies)
+                {
+                    return true;
+                }
+
+                if (player != null && player.photonView != null)
+                {
+                    // if player being "seen" is the local player, block
+                    if (player.photonView.IsMine)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            [HarmonyPatch(typeof(EnemyStateInvestigate), nameof(EnemyStateInvestigate.SetRPC))]
+            public static class EnemyStateInvestigate_BlindAudio_Patch
+            {
+                private const float LOCAL_PLAYER_SOUND_THRESHOLD = 1.5f;
+
+                static bool Prefix(Vector3 position)
+                {
+                    if (!Hax2.blindEnemies)
+                    {
+                        return true;
+                    }
+
+                    PlayerAvatar localPlayerAvatar = null;
+                    GameObject localPlayerGO = null;
+                    try
+                    { // in case DebugCheats isn't available/initialized yet
+                        localPlayerGO = DebugCheats.GetLocalPlayer();
+                        if (localPlayerGO != null)
+                        {
+                            localPlayerAvatar = localPlayerGO.GetComponent<PlayerAvatar>();
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        DLog.LogWarning($"Error accessing DebugCheats.GetLocalPlayer(): {ex.Message}");
+                    }
+
+
+                    // fallback
+                    if (localPlayerAvatar == null && GameDirector.instance != null && GameDirector.instance.PlayerList != null)
+                    {
+                        try
+                        {
+                            localPlayerAvatar = GameDirector.instance.PlayerList.FirstOrDefault(p => p != null && p.photonView != null && p.photonView.IsMine);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            DLog.LogWarning($"Error accessing GameDirector.instance.PlayerList: {ex.Message}");
+                        }
+                    }
+
+                    if (localPlayerAvatar == null)
+                    {
+                        DLog.LogWarning("EnemyStateInvestigate_BlindAudio_Patch: Could not find local player avatar via any method.");
+                        return true;
+                    }
+
+
+                    Vector3 localPlayerPos = localPlayerAvatar.transform.position;
+
+                    // if sound close enough to be our player, block
+                    if (Vector3.Distance(position, localPlayerPos) < LOCAL_PLAYER_SOUND_THRESHOLD)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
             }
         }
     }
