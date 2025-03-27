@@ -8,7 +8,7 @@ using Photon.Realtime;
 using System.Linq;
 using SingularityGroup.HotReload;
 using System.Runtime.CompilerServices;
-// using dark_cheat.Utils;
+using dark_cheat.Utils;
 
 namespace dark_cheat
 {
@@ -1872,6 +1872,145 @@ namespace dark_cheat
                                     DLog.Log("Invalid player index for teleport target");
                                 }
                             }
+                        }
+
+                        // --- SPAWN UI SECTION ---
+                        float spawnButtonWidth = 100;
+                        float spawnCountTextBoxWidth = 50;
+                        float spawnDropdownWidth = 200;
+                        float gap = 10;
+
+                        // Build and cache the enemy blueprint lists only once.
+                        if (cachedFilteredEnemySetups == null || cachedEnemySetupNames == null)
+                        {
+                            List<EnemySetup> enemySetups = new List<EnemySetup>();
+                            List<EnemySetup> enemies1, enemies2, enemies3;
+                            if (EnemySpawner.TryGetEnemyLists(out enemies1, out enemies2, out enemies3))
+                            {
+                                enemySetups.AddRange(enemies1);
+                                enemySetups.AddRange(enemies2);
+                                enemySetups.AddRange(enemies3);
+                            }
+                            // Filter the list: remove any whose name contains "Enemy Group", and remove "Enemy -" prefix.
+                            cachedFilteredEnemySetups = new List<EnemySetup>();
+                            cachedEnemySetupNames = new List<string>();
+                            foreach (var setup in enemySetups)
+                            {
+                                if (setup.name.Contains("Enemy Group"))
+                                    continue;
+
+                                string displayName = setup.name;
+                                if (displayName.StartsWith("Enemy -"))
+                                {
+                                    displayName = displayName.Substring("Enemy -".Length).Trim();
+                                }
+                                cachedFilteredEnemySetups.Add(setup);
+                                cachedEnemySetupNames.Add(displayName);
+                            }
+                        }
+
+                        // Layout: [Spawn Button] [Integer Text Box] [Dropdown Button]
+
+                        // Spawn Button
+                        Rect spawnButtonRect = new Rect(0, enemyYPos, spawnButtonWidth, 25);
+                        if (UIHelper.Button("Spawn", spawnButtonRect.x, enemyYPos, spawnButtonWidth, 25))
+                        {
+                            LevelGenerator levelGenerator = UnityEngine.Object.FindObjectOfType<LevelGenerator>();
+                            if (levelGenerator == null)
+                            {
+                                DLog.Log("LevelGenerator instance not found!");
+                            }
+                            else
+                            {
+                                GameObject localPlayer = DebugCheats.GetLocalPlayer();
+                                if (localPlayer == null)
+                                {
+                                    DLog.Log("Local player not found!");
+                                }
+                                else
+                                {
+                                    Vector3 spawnPosition = localPlayer.transform.position + Vector3.up * 1.5f;
+
+                                    // Filter input: allow only numbers and limit to 2 characters.
+                                    spawnCountText = System.Text.RegularExpressions.Regex.Replace(spawnCountText, "[^0-9]", "");
+                                    if (spawnCountText.Length > 2)
+                                        spawnCountText = spawnCountText.Substring(0, 2);
+
+                                    // Parse the number; default to 1 if parsing fails.
+                                    int spawnCount = 1;
+                                    if (!int.TryParse(spawnCountText, out spawnCount))
+                                    {
+                                        spawnCount = 1;
+                                    }
+                                    spawnCount = Mathf.Clamp(spawnCount, 1, 10);
+
+                                    if (spawnEnemyIndex >= 0 && spawnEnemyIndex < cachedFilteredEnemySetups.Count)
+                                    {
+                                        for (int i = 0; i < spawnCount; i++)
+                                        {
+                                            EnemySpawner.SpawnSpecificEnemy(levelGenerator, cachedFilteredEnemySetups[spawnEnemyIndex], spawnPosition);
+                                        }
+                                        DLog.Log($"Spawn triggered for {spawnCount} enemy(ies): {cachedEnemySetupNames[spawnEnemyIndex]}");
+                                    }
+                                    else
+                                    {
+                                        DLog.Log("Invalid spawn enemy index.");
+                                    }
+                                }
+                            }
+                        }
+
+                        // Textbox for number of enemies to spawn.
+                        Rect spawnCountTextRect = new Rect(spawnButtonRect.x + spawnButtonWidth + gap, enemyYPos, spawnCountTextBoxWidth, 25);
+                        spawnCountText = GUI.TextField(spawnCountTextRect, spawnCountText); // Accepts only numbers due to filtering above.
+
+                        // Dropdown Button for selecting the enemy blueprint.
+                        Rect spawnDropdownButtonRect = new Rect(spawnCountTextRect.x + spawnCountTextBoxWidth + gap, enemyYPos, spawnDropdownWidth, 25);
+                        string spawnDropdownText = (spawnEnemyIndex >= 0 && spawnEnemyIndex < cachedEnemySetupNames.Count) ?
+                                                   cachedEnemySetupNames[spawnEnemyIndex] : "Select enemy";
+                        if (GUI.Button(spawnDropdownButtonRect, spawnDropdownText))
+                        {
+                            showSpawnDropdown = !showSpawnDropdown;
+                        }
+                        enemyYPos += 25;  // Advance past the top row of controls.
+
+                        // Expanded Dropdown List (if toggled open).
+                        if (showSpawnDropdown)
+                        {
+                            int itemHeight = 25;
+                            int maxVisibleItems = 6;
+                            int visibleItems = Math.Min(cachedEnemySetupNames.Count, maxVisibleItems);
+                            float dropdownHeight = visibleItems * itemHeight;
+
+                            // Determine if a vertical scrollbar is needed.
+                            float vScrollbarWidth = (cachedEnemySetupNames.Count * itemHeight > dropdownHeight) ? 16f : 0f;
+
+                            // Draw the dropdown list directly below the dropdown button, aligned with it.
+                            Rect spawnDropdownListRect = new Rect(spawnDropdownButtonRect.x, enemyYPos, spawnDropdownWidth, dropdownHeight);
+                            Rect spawnViewRect = new Rect(0, 0, spawnDropdownWidth - vScrollbarWidth, cachedEnemySetupNames.Count * itemHeight);
+                            spawnDropdownScrollPosition = GUI.BeginScrollView(
+                                spawnDropdownListRect,
+                                spawnDropdownScrollPosition,
+                                spawnViewRect,
+                                false, false
+                            );
+
+                            // Create a centered GUIStyle for the dropdown buttons.
+                            GUIStyle centeredStyle = new GUIStyle(GUI.skin.button)
+                            {
+                                alignment = TextAnchor.MiddleCenter
+                            };
+
+                            for (int i = 0; i < cachedEnemySetupNames.Count; i++)
+                            {
+                                if (GUI.Button(new Rect(0, i * itemHeight, spawnDropdownWidth - vScrollbarWidth, itemHeight), cachedEnemySetupNames[i], centeredStyle))
+                                {
+                                    spawnEnemyIndex = i;
+                                    showSpawnDropdown = false;
+                                }
+                            }
+                            GUI.EndScrollView();
+                            enemyYPos += dropdownHeight;
                         }
 
                         GUI.EndScrollView();
