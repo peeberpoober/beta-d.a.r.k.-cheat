@@ -1324,9 +1324,6 @@ namespace dark_cheat
                         if (UIHelper.Button("Tumble", 0, combatYPos)) { Players.ForcePlayerTumble(); DLog.Log("Player tumbled: " + playerNames[selectedPlayerIndex]); }
                         combatYPos += parentSpacing;
 
-                        if (UIHelper.Button("Kick Player", 0, combatYPos)) { MiscFeatures.CrashSelectedPlayerNew(); DLog.Log("Attempting to crash player: " + playerNames[selectedPlayerIndex]); }
-                        combatYPos += parentSpacing;
-
                         if (UIHelper.Button(showTeleportUI ? "Hide Teleport Options" : "Teleport Options", 0, combatYPos))
                         {
                             showTeleportUI = !showTeleportUI;
@@ -1492,6 +1489,9 @@ namespace dark_cheat
                         if (UIHelper.Button("Force High Volume", 0, miscYPos)) MiscFeatures.ForcePlayerMicVolume(9999999);
                         miscYPos += parentSpacing;
 
+                        if (UIHelper.Button("Kick Player", 0, miscYPos)) { MiscFeatures.CrashSelectedPlayerNew(); DLog.Log("Attempting to crash player: " + playerNames[selectedPlayerIndex]); }
+                        miscYPos += parentSpacing;
+
                         if (UIHelper.Button("Crash Lobby", 0, miscYPos))
                         {
                             DLog.Log("Crashing Lobby!");
@@ -1504,35 +1504,6 @@ namespace dark_cheat
                         }
                         miscYPos += parentSpacing;
 
-                        bool newNoFogState = UIHelper.ButtonBool("No Fog", MiscFeatures.NoFogEnabled, 0, miscYPos);
-                        if (newNoFogState != MiscFeatures.NoFogEnabled)
-                        {
-                            MiscFeatures.ToggleNoFog(newNoFogState);
-                        }
-                        miscYPos += parentSpacing;
-
-                        bool newWatermarkState = UIHelper.ButtonBool("Disable Watermark", !showWatermark, 0, miscYPos);
-                        if (newWatermarkState != !showWatermark)
-                        {
-                            showWatermark = !newWatermarkState;
-                        }
-                        miscYPos += parentSpacing;
-
-                        UIHelper.Label("Map Tweaks:", 0, miscYPos);
-                        miscYPos += childIndent;
-
-                        if (UIHelper.Button("Disable '?' Overlay (can't be undone in level)", 0, miscYPos))
-                        {
-                            MapTools.changeOverlayStatus(true);
-                        }
-                        miscYPos += parentSpacing;
-
-                        if (UIHelper.Button("Discover Map Valuables", 0, miscYPos))
-                        {
-                            MapTools.DiscoveryMapValuables();
-                        }
-                        miscYPos += parentSpacing;
-
                         // Force Host section
                         float screenWidth = 540f; // Total width of the scroll view
                         float buttonSpacing = 10f; // Small spacing between buttons
@@ -1541,7 +1512,7 @@ namespace dark_cheat
                         float hostButtonWidth = (screenWidth / 2) - (buttonSpacing / 2); // Make Force Host button take up left half of screen (minus small spacing)
                         float levelButtonWidth = (screenWidth / 2) - (buttonSpacing / 2); // Level selector takes the right half (minus small spacing)
 
-                        if (GUI.Button(new Rect(0, miscYPos, hostButtonWidth, buttonHeight), "Force Host"))
+                        if (GUI.Button(new Rect(0, miscYPos, hostButtonWidth, buttonHeight), "Force Host & Start"))
                         { // Draw "Force Host" button aligned to the left
                             ForceHost.Instance.StartCoroutine(ForceHost.Instance.ForceStart(availableLevels[selectedLevelIndex]));
                         }
@@ -1550,7 +1521,7 @@ namespace dark_cheat
                         { // Draw dropdown toggle button - fills the rest of the space to the right
                             showLevelDropdown = !showLevelDropdown;
                         }
-                        miscYPos += buttonHeight + 5f;
+                        miscYPos += buttonHeight + 10f;
 
                         if (showLevelDropdown) // Dropdown menu
                         {
@@ -1572,12 +1543,6 @@ namespace dark_cheat
                             GUI.EndScrollView();
                             miscYPos += dropdownHeight + 5f;
                         }
-                        else
-                        {
-                            miscYPos += 5f;
-                        }
-
-                        miscYPos += 5f;
 
                         // === Spoof Name ===
                         float spoofButtonWidth = 120f;
@@ -1748,7 +1713,7 @@ namespace dark_cheat
                         chatMessageText = GUI.TextField( // [Text Box: Chat Message] - fills the remaining space to the right
                             new Rect(chatStartX + chatButtonWidth + chatSpacing + chatDropdownWidth + chatSpacing, miscYPos, chatTextBoxWidth, chatHeight),
                             chatMessageText);
-                        miscYPos += chatHeight + 5f;
+                        miscYPos += chatHeight + 10f;
 
                         if (ChatDropdownVisible) // Dropdown buttons (if expanded)
                         {
@@ -1764,7 +1729,36 @@ namespace dark_cheat
                             }
                             miscYPos += 5f;
                         }
+
+                        bool newNoFogState = UIHelper.ButtonBool("No Fog", MiscFeatures.NoFogEnabled, 0, miscYPos);
+                        if (newNoFogState != MiscFeatures.NoFogEnabled)
+                        {
+                            MiscFeatures.ToggleNoFog(newNoFogState);
+                        }
                         miscYPos += parentSpacing;
+
+                        bool newWatermarkState = UIHelper.ButtonBool("Disable Watermark", !showWatermark, 0, miscYPos);
+                        if (newWatermarkState != !showWatermark)
+                        {
+                            showWatermark = !newWatermarkState;
+                        }
+                        miscYPos += parentSpacing;
+
+                        UIHelper.Label("Map Tweaks (can't be undone in level):", 0, miscYPos);
+                        miscYPos += childIndent;
+
+                        if (UIHelper.Button("Disable '?' Overlay", 0, miscYPos))
+                        {
+                            MapTools.changeOverlayStatus(true);
+                        }
+                        miscYPos += parentSpacing;
+
+                        if (UIHelper.Button("Discover Map Valuables", 0, miscYPos))
+                        {
+                            MapTools.DiscoveryMapValuables();
+                        }
+                        miscYPos += parentSpacing;
+
                         GUI.EndScrollView();
                         break;
 
@@ -1799,115 +1793,6 @@ namespace dark_cheat
                         }
                         GUI.EndScrollView();
                         enemyYPos += enemyListViewHeight + 15;
-
-                        if (UIHelper.Button("Kill Enemy", 0, enemyYPos))
-                        {
-                            Enemies.KillSelectedEnemy(selectedEnemyIndex, enemyList, enemyNames);
-                            DLog.Log($"Attempt to kill the selected enemy completed: {enemyNames[selectedEnemyIndex]}");
-                        }
-                        enemyYPos += parentSpacing;
-
-                        if (UIHelper.Button("Kill All Enemies", 0, enemyYPos))
-                        {
-                            Enemies.KillAllEnemies();
-                            DLog.Log("Attempt to kill all enemies completed.");
-                        }
-                        enemyYPos += parentSpacing;
-
-                        bool newBlindState = UIHelper.ButtonBool("Blind Enemies", blindEnemies, 0, enemyYPos);
-                        if (newBlindState != blindEnemies)
-                        {
-                            blindEnemies = newBlindState;
-                            DLog.Log("Blind Enemies toggled: " + blindEnemies);
-                        }
-                        enemyYPos += parentSpacing;
-
-                        if (UIHelper.Button(showEnemyTeleportUI ? "Hide Teleport Options" : "Teleport Options", 0, enemyYPos))
-                        {
-                            showEnemyTeleportUI = !showEnemyTeleportUI;
-                            if (showEnemyTeleportUI)
-                            {
-                                UpdateEnemyTeleportOptions();
-                            }
-                        }
-                        enemyYPos += parentSpacing;
-
-                        if (showEnemyTeleportUI)
-                        {
-                            float labelWidth = 150;
-                            float dropdownWidth = 200;
-                            float tpCenterX = 270;
-                            float tpSpacing = 20;
-
-                            float tpTotalWidth = labelWidth + tpSpacing + dropdownWidth;
-                            float tpStartX = tpCenterX - (tpTotalWidth / 2);
-
-                            GUI.Label(new Rect(tpStartX, enemyYPos, labelWidth, 25), "Teleport Enemy To      →");
-
-                            string currentDestination = enemyTeleportDestIndex >= 0 && enemyTeleportDestIndex < enemyTeleportDestOptions.Length ?
-                                enemyTeleportDestOptions[enemyTeleportDestIndex] : "No players available";
-
-                            if (GUI.Button(new Rect(tpStartX + labelWidth + tpSpacing, enemyYPos, dropdownWidth, 25), currentDestination))
-                            {
-                                showEnemyTeleportDropdown = enemyTeleportDestOptions.Length > 0 ? !showEnemyTeleportDropdown : false;
-                            }
-                            enemyYPos += parentSpacing;
-
-                            if (showEnemyTeleportDropdown)
-                            {
-                                int itemHeight = enemyTeleportDestOptions.Length > 0 ? 25 : 0;
-                                int maxVisibleItems = 6;
-                                int visibleItems = Math.Min(enemyTeleportDestOptions.Length, maxVisibleItems);
-                                float dropdownHeight = visibleItems * itemHeight;
-
-                                Rect dropdownRect = new Rect(tpStartX + labelWidth + tpSpacing, enemyYPos - 15, dropdownWidth, dropdownHeight);
-
-                                float contentHeight = enemyTeleportDestOptions.Length * itemHeight;
-
-                                // Adjust content height to account for skipping the selected item
-                                if (enemyTeleportDestIndex >= 0 && enemyTeleportDestIndex < enemyTeleportDestOptions.Length)
-                                    contentHeight -= itemHeight;
-
-                                enemyTeleportDropdownScrollPosition = GUI.BeginScrollView(dropdownRect, enemyTeleportDropdownScrollPosition, new Rect(0, 0, dropdownWidth - 20, contentHeight));
-
-                                int displayedIndex = 0;
-                                for (int i = 0; i < enemyTeleportDestOptions.Length; i++)
-                                {
-                                    if (i != enemyTeleportDestIndex)
-                                    {
-                                        if (GUI.Button(new Rect(0, displayedIndex * itemHeight, dropdownWidth - 20, itemHeight), enemyTeleportDestOptions[i])) enemyTeleportDestIndex = i;
-                                        displayedIndex++;
-                                    }
-                                }
-                                GUI.EndScrollView();
-                            }
-
-                            float executeButtonYPos = enemyYPos + 10;
-                            float dropdownOffset = 0;
-
-                            if (showEnemyTeleportDropdown && enemyTeleportDestOptions.Length > 1) dropdownOffset = Math.Min(enemyTeleportDestOptions.Length - 1, 5) * 25;
-                            if (GUI.Button(new Rect(tpCenterX - 75f, executeButtonYPos + dropdownOffset, 150f, 25f), "Execute Teleport"))
-                            {
-                                int playerIndex = enemyTeleportDestIndex;
-                                if (playerIndex >= 0 && playerIndex < playerList.Count)
-                                {
-                                    if (DebugCheats.IsLocalPlayer(playerList[playerIndex]))
-                                    {
-                                        Enemies.TeleportEnemyToMe(selectedEnemyIndex, enemyList, enemyNames);
-                                    }
-                                    else
-                                    {
-                                        Enemies.TeleportEnemyToPlayer(selectedEnemyIndex, enemyList, enemyNames, playerIndex, playerList, playerNames);
-                                    }
-                                    UpdateEnemyList();
-                                    DLog.Log($"Teleported {enemyNames[selectedEnemyIndex]} to {playerNames[playerIndex]}.");
-                                }
-                                else
-                                {
-                                    DLog.Log("Invalid player index for teleport target");
-                                }
-                            }
-                        }
 
                         // --- SPAWN UI SECTION ---
                         float spawnButtonWidth = 100;
@@ -2007,7 +1892,7 @@ namespace dark_cheat
                         {
                             showSpawnDropdown = !showSpawnDropdown;
                         }
-                        enemyYPos += 25;  // Advance past the top row of controls.
+                        enemyYPos += 35;  // Advance past the top row of controls.
 
                         // Expanded Dropdown List (if toggled open).
                         if (showSpawnDropdown)
@@ -2045,7 +1930,121 @@ namespace dark_cheat
                                 }
                             }
                             GUI.EndScrollView();
-                            enemyYPos += dropdownHeight;
+                            enemyYPos += dropdownHeight + 5;
+                        }
+
+                        if (UIHelper.Button("Kill Enemy", 0, enemyYPos))
+                        {
+                            Enemies.KillSelectedEnemy(selectedEnemyIndex, enemyList, enemyNames);
+                            DLog.Log($"Attempt to kill the selected enemy completed: {enemyNames[selectedEnemyIndex]}");
+                        }
+                        enemyYPos += parentSpacing;
+
+                        if (UIHelper.Button("Kill All Enemies", 0, enemyYPos))
+                        {
+                            Enemies.KillAllEnemies();
+                            DLog.Log("Attempt to kill all enemies completed.");
+                        }
+                        enemyYPos += parentSpacing;
+
+                        bool newBlindState = UIHelper.ButtonBool("Blind Enemies", blindEnemies, 0, enemyYPos);
+                        if (newBlindState != blindEnemies)
+                        {
+                            blindEnemies = newBlindState;
+                            DLog.Log("Blind Enemies toggled: " + blindEnemies);
+                        }
+                        enemyYPos += parentSpacing;
+
+                        if (UIHelper.Button(showEnemyTeleportUI ? "Hide Teleport Options" : "Teleport Options", 0, enemyYPos))
+                        {
+                            showEnemyTeleportUI = !showEnemyTeleportUI;
+                            if (showEnemyTeleportUI)
+                            {
+                                UpdateEnemyTeleportOptions();
+                            }
+                        }
+                        enemyYPos += parentSpacing;
+
+                        if (showEnemyTeleportUI)
+                        {
+                            float labelWidth = 150;
+                            float dropdownWidth = 200;
+                            float tpCenterX = 270;
+                            float tpSpacing = 20;
+
+                            float tpTotalWidth = labelWidth + tpSpacing + dropdownWidth;
+                            float tpStartX = tpCenterX - (tpTotalWidth / 2);
+
+                            GUI.Label(new Rect(tpStartX, enemyYPos, labelWidth, 25), "Teleport Enemy To      →");
+
+                            string currentDestination = enemyTeleportDestIndex >= 0 && enemyTeleportDestIndex < enemyTeleportDestOptions.Length ?
+                                enemyTeleportDestOptions[enemyTeleportDestIndex] : "No players available";
+
+                            if (GUI.Button(new Rect(tpStartX + labelWidth + tpSpacing, enemyYPos, dropdownWidth, 25), currentDestination))
+                            {
+                                showEnemyTeleportDropdown = enemyTeleportDestOptions.Length > 0 ? !showEnemyTeleportDropdown : false;
+                            }
+                            enemyYPos += parentSpacing;
+
+                            if (showEnemyTeleportDropdown)
+                            {
+                                int itemHeight = enemyTeleportDestOptions.Length > 0 ? 25 : 0;
+                                int maxVisibleItems = 6;
+                                int visibleItems = Math.Min(enemyTeleportDestOptions.Length, maxVisibleItems);
+                                float dropdownHeight = visibleItems * itemHeight;
+
+                                Rect dropdownRect = new Rect(tpStartX + labelWidth + tpSpacing, enemyYPos - 15, dropdownWidth, dropdownHeight);
+
+                                float contentHeight = enemyTeleportDestOptions.Length * itemHeight;
+
+                                // Adjust content height to account for skipping the selected item
+                                if (enemyTeleportDestIndex >= 0 && enemyTeleportDestIndex < enemyTeleportDestOptions.Length)
+                                    contentHeight -= itemHeight;
+
+                                enemyTeleportDropdownScrollPosition = GUI.BeginScrollView(dropdownRect, enemyTeleportDropdownScrollPosition, new Rect(0, 0, dropdownWidth - 20, contentHeight));
+
+                                int displayedIndex = 0;
+                                for (int i = 0; i < enemyTeleportDestOptions.Length; i++)
+                                {
+                                    if (i != enemyTeleportDestIndex)
+                                    {
+                                        if (GUI.Button(new Rect(0, displayedIndex * itemHeight, dropdownWidth - 20, itemHeight), enemyTeleportDestOptions[i])) enemyTeleportDestIndex = i;
+                                        displayedIndex++;
+                                    }
+                                }
+                                GUI.EndScrollView();
+                            }
+
+                            enemyYPos += 10;
+                            float dropdownOffset = 0;
+
+                            if (showEnemyTeleportDropdown && enemyTeleportDestOptions.Length > 1)
+                            {
+                                dropdownOffset = Math.Min(enemyTeleportDestOptions.Length - 1, 5) * 25;
+                                enemyYPos += dropdownOffset;
+                            }
+                            if (GUI.Button(new Rect(tpCenterX - 75f, enemyYPos, 150f, 25f), "Execute Teleport"))
+                            {
+                                int playerIndex = enemyTeleportDestIndex;
+                                if (playerIndex >= 0 && playerIndex < playerList.Count)
+                                {
+                                    if (DebugCheats.IsLocalPlayer(playerList[playerIndex]))
+                                    {
+                                        Enemies.TeleportEnemyToMe(selectedEnemyIndex, enemyList, enemyNames);
+                                    }
+                                    else
+                                    {
+                                        Enemies.TeleportEnemyToPlayer(selectedEnemyIndex, enemyList, enemyNames, playerIndex, playerList, playerNames);
+                                    }
+                                    UpdateEnemyList();
+                                    DLog.Log($"Teleported {enemyNames[selectedEnemyIndex]} to {playerNames[playerIndex]}.");
+                                }
+                                else
+                                {
+                                    DLog.Log("Invalid player index for teleport target");
+                                }
+                            }
+                            enemyYPos += parentSpacing;
                         }
 
                         GUI.EndScrollView();
