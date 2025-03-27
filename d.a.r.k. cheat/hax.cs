@@ -1570,23 +1570,18 @@ namespace dark_cheat
                         float spoofStartX = (540f - totalSpoofRowWidth) / 2f;
                         float spoofTextBoxWidth = 540f - spoofButtonWidth - spoofDropdownWidth - (2 * spoofSpacing);
 
-                        GUI.color = spoofNameEnabled ? Color.green : Color.white; // [Spoof Name] Button
                         if (GUI.Button(new Rect(spoofStartX, miscYPos, spoofButtonWidth, spoofHeight), "Spoof Name"))
                         {
-                            spoofNameEnabled = !spoofNameEnabled;
-                            if (spoofNameEnabled)
-                            { // Enable spoofing
+                            if (!string.IsNullOrEmpty(spoofedNameText))
+                            {
                                 ChatHijack.ToggleNameSpoofing(true, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
                                 DLog.Log("Spoofed name to " + spoofedNameText);
                             }
                             else
                             {
-                                // Disable spoofing, but do NOT clear spoofedNameText.
-                                ChatHijack.ToggleNameSpoofing(false, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
-                                DLog.Log("Reset names to original. Spoof text retained: " + spoofedNameText);
+                                DLog.Log("Please enter a name to spoof");
                             }
                         }
-                        GUI.color = Color.white;
 
                         if (GUI.Button(new Rect(spoofStartX + spoofButtonWidth + spoofSpacing, miscYPos, spoofDropdownWidth, spoofHeight), spoofTargetVisibleName))
                         { // [Dropdown: Player List]
@@ -1608,8 +1603,8 @@ namespace dark_cheat
                                     spoofTargetVisibleName = name;
                                     spoofDropdownVisible = false;
 
-                                    if (spoofNameEnabled && !string.IsNullOrEmpty(spoofedNameText))
-                                    { // Update spoofing if already enabled when changing target
+                                    if (!string.IsNullOrEmpty(spoofedNameText))
+                                    { // Update spoofing if text is entered when changing target
                                         ChatHijack.ToggleNameSpoofing(true, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
                                         DLog.Log("Updated spoofing target to " + spoofTargetVisibleName);
                                     }
@@ -1618,6 +1613,15 @@ namespace dark_cheat
                             }
                             miscYPos += 5f;
                         }
+
+                        // Add a new button to reset the spoofed name
+                        if (GUI.Button(new Rect(spoofStartX, miscYPos, 540, 30), "Reset Spoofed Name"))
+                        {
+                            ChatHijack.ToggleNameSpoofing(false, "", spoofTargetVisibleName, playerList, playerNames);
+                            spoofedNameText = "";
+                            DLog.Log("Reset names to original and cleared text.");
+                        }
+                        miscYPos += 35f;
 
                         // === Color Change ===
                         float colorButtonWidth = 120f;
