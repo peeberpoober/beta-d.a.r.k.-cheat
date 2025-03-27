@@ -1,86 +1,101 @@
-# beta-d.a.r.k.-cheat
-<sub>*Made by D4rkks (and contributors)* | **v1.1.2.1**</sub>
+# beta-d.a.r.k.-cheat | [Discord](https://discord.gg/RAR8D26P4s)
+<sub>*Made by [D4rkks](https://github.com/D4rkks) (and contributors)* | **v1.2**</sub>
 
 # **FUNCTIONS:**
 
-### Player
-- See Live/Dead Players
-- Heal Any Player
-- Damage Any Player
-- Toggle Infinite Health
-- Toggle Infinity Stamina
-- Toggle God Mode
-- Toggle Noclip
-- Change Speed
-- Change Strength
-- Change Stamina Recharge Delay
-- Change Stamina Recharge Rate
+### Self
+- God Mode
+- Noclip
+- Infinite Health
+- Infinity Stamina
+- Grab Guard
+- [RGB Player](https://github.com/svind1er)
+- Set Strength
+- Set Throw Strength
+- Set Grab Range
+- Set Sprint Speed
+- Set Stamina Recharge Delay
+- Set Stamina Recharge Rate
+- Set Extra Jumps
+- Set Jump Force
+- Set Custom Gravity
+- Set Crouch Delay
+- Set Crouch Speed
+- Set Slide Decay
+- Set Flashlight Intensity
+- Set Field of View
   
 ### ESP
 - Enemy ESP
+  - 2D Box/Chams
   - Name
   - Distance
+  - Health
 - Item ESP
+  - [3D Box](https://github.com/chadlrnsn)/Chams
   - Name
   - Distance
+    - Max Item Distance Slider
   - Value
-  - 3D ESP (contribution from https://github.com/chadlrnsn)
+    - Min Item Value Slider
   - Dead Player Heads
+- Chams Color Picker
 - Extraction ESP
-  - See idle/completed Extractions
+  - Name/Status
   - Distance
-- 2/3D Player ESP
+- Player ESP
+  - 2/3D Box
   - Name
   - Distance
   - Health
     
 ### Combat
+- See Live/Dead Players
 - Revive Any Player
 - Kill Any Player
-- Send Any Player To Void
-- Teleport to Player
-- Teleport Player to You
+- Heal Any Player
+- Damage Any Player
+- Force Tumble
+- Teleport
+  - Any player to any player
+  - Any player to void
   
 ### Misc
-- Spawn MoneyBag
-- Player RGB Skin (partial contribution from https://github.com/svind1er)
-- Set Flashlight Intensity
-- Set Crouch Delay
-- Set Crouch Speed
-- Set Jump Force
-- Set Custom Extra Jumps
-- Set Custom Gravity
-- Set Grab Range
-- Throw Strength
-- Slide Decay
+- Force Host w/ Force Start
+- Force Mute
+- Force High Volume
+- Kick Player
+- Crash Lobby's Games
+- Spoof Names
+- Spoof Colors
+- Hijack Chats
+- Map Tweaks
+  - Disable '?' Overlay
+  - Discover Valuables
 - No Fog
+- Disable Watermark
 
 ### Enemies
 - Enemy List
-- Kill Selected Enemy
-- Kill All Enemies
-- Teleport Enemy To You
+- Kill All/Selected Enemy
+- Blind Enemies
+- Teleport
+  - Any enemy to any player
+  - Any enemy to void
+- Enemy Spawner
     
-### Items (host-only for now)
+### Items
 - Item List
-- Teleport Item to You
-- Teleport All Items To You
+- Teleport All/Selected Item to You
 - Change Item Value
+- Spawn MoneyBag
+- Item Spawner
 
 ### Hotkeys
 
 # **TO-DO:**
-1. <ins>**Merge pull requests/local contributions**</ins>
-   - LustWare's Force Mute/Raise Player Volume
-   - August's Spawn Enemies
-2. **Task tracker**
-3. **Refactor**
-- Take/Give Host
-- Enemy Health
+- Take/Give Host (?)
 - Change Damage
-- Get All Upgrade Items
-- Change Upgrades Numbers
 - Complete Mission
 - Bypass Extraction Lock
-- Spawn Enemies
 - No Item Damage
