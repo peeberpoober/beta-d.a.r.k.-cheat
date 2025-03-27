@@ -61,28 +61,28 @@
   - Any player to void
   
 ### Misc
-- Force Host w/ Force Start
 - Force Mute
 - Force High Volume
 - Kick Player
 - Crash Lobby's Games
+- Force Host w/ Force Start
 - Spoof Names
 - Spoof Colors
 - Hijack Chats
+- No Fog
+- Disable Watermark
 - Map Tweaks
   - Disable '?' Overlay
   - Discover Valuables
-- No Fog
-- Disable Watermark
 
 ### Enemies
 - Enemy List
+- Enemy Spawner
 - Kill All/Selected Enemy
 - Blind Enemies
 - Teleport
   - Any enemy to any player
   - Any enemy to void
-- Enemy Spawner
     
 ### Items
 - Item List
