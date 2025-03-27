@@ -190,6 +190,7 @@ namespace dark_cheat
         public static bool stamineState = false;
         public static bool unlimitedBatteryActive = false;
         public static UnlimitedBattery unlimitedBatteryComponent;
+        public static bool blindEnemies = false;
         private Vector2 playerScrollPosition = Vector2.zero;
         private Vector2 enemyScrollPosition = Vector2.zero;
         private int teleportPlayerSourceIndex = 0;  // Default to first player in list
@@ -1810,6 +1811,14 @@ namespace dark_cheat
                         {
                             Enemies.KillAllEnemies();
                             DLog.Log("Attempt to kill all enemies completed.");
+                        }
+                        enemyYPos += parentSpacing;
+
+                        bool newBlindState = UIHelper.ButtonBool("Blind Enemies", blindEnemies, 0, enemyYPos);
+                        if (newBlindState != blindEnemies)
+                        {
+                            blindEnemies = newBlindState;
+                            DLog.Log("Blind Enemies toggled: " + blindEnemies);
                         }
                         enemyYPos += parentSpacing;
 
