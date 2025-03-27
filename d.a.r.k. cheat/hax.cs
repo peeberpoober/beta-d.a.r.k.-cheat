@@ -9,6 +9,7 @@ using System.Linq;
 using SingularityGroup.HotReload;
 using System.Runtime.CompilerServices;
 using dark_cheat.Utils;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 namespace dark_cheat
 {
@@ -229,8 +230,12 @@ namespace dark_cheat
         private bool spoofNameEnabled = false;
         private string spoofTargetVisibleName = "All";
         private bool spoofDropdownVisible = false;
-        private string spoofedNameText = "";
+        public static string spoofedNameText = "";
         private string originalSteamName = Steamworks.SteamClient.Name; // Store real name at startup
+        public static bool spoofNameActive = false;
+        private float lastSpoofTime = 0f;
+        private const float NAME_SPOOF_DELAY = 4f;
+        static public bool hasAlreadySpoofed = false;
 
         // Color change UI variables
         private string colorTargetVisibleName = "All";
@@ -342,6 +347,7 @@ namespace dark_cheat
         }
         private void CheckForLevelChange()
         {
+            float now = Time.time;
             string currentLevelName = RunManager.instance.levelCurrent != null ? RunManager.instance.levelCurrent.name : ""; // Get current level name
             if (currentLevelName != previousLevelName && !string.IsNullOrEmpty(currentLevelName) && !pendingLevelUpdate) // Check if level has just changed
             {
@@ -353,6 +359,18 @@ namespace dark_cheat
                 showSourceDropdown = false; // Reset dropdown states immediately to ensure clean UI after level change
                 showDestDropdown = false;
                 showEnemyTeleportDropdown = false;
+            }
+            if (currentLevelName != "Level - Main Menu")
+            {
+                if (spoofNameActive)
+                { 
+                    if (now - lastSpoofTime >= NAME_SPOOF_DELAY)
+                    {  
+                        ChatHijack.ToggleNameSpoofing(spoofNameActive, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
+                        lastSpoofTime = now;  
+                    }
+                    
+                }
             }
             if (pendingLevelUpdate && Time.time >= levelChangeDetectedTime + LEVEL_UPDATE_DELAY) // Check if it's time to perform the delayed update
             {
@@ -724,7 +742,6 @@ namespace dark_cheat
                 InitializeGUIStyles();
                 initialized = true;
             }
-
             UIHelper.InitSliderStyles();
 
             if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool || DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool || DebugCheats.drawChamsBool) DebugCheats.DrawESP();
@@ -1623,6 +1640,11 @@ namespace dark_cheat
                             DLog.Log("Reset names to original and cleared text.");
                         }
                         miscYPos += 35f;
+
+                        bool newSpoofNameState = UIHelper.ButtonBool("Toggle Spoof Name", spoofNameActive, 0, miscYPos);
+                        if (newSpoofNameState != spoofNameActive) { spoofNameActive = newSpoofNameState; Debug.Log("Spoof Name Toggled: " + spoofNameActive); }
+                        miscYPos += parentSpacing;
+
 
                         // === Color Change ===
                         float colorButtonWidth = 120f;
