@@ -8,7 +8,7 @@ using Photon.Realtime;
 using System.Linq;
 using SingularityGroup.HotReload;
 using System.Runtime.CompilerServices;
-// using dark_cheat.Utils;
+using dark_cheat.Utils;
 
 namespace dark_cheat
 {
@@ -230,6 +230,28 @@ namespace dark_cheat
         private bool spoofDropdownVisible = false;
         private string spoofedNameText = "";
         private string originalSteamName = Steamworks.SteamClient.Name; // Store real name at startup
+
+        // Color change UI variables
+        private string colorTargetVisibleName = "All";
+        private bool colorDropdownVisible = false;
+        private string colorIndexText = "1"; // Default color index
+        private bool showColorIndexDropdown = false;
+        private Vector2 colorIndexScrollPosition = Vector2.zero;
+        private Dictionary<int, string> colorNameMapping = new Dictionary<int, string>()
+        {
+            {0, "White"}, {1, "Grey"}, {2, "Black"},
+            {3, "Light Red"}, {4, "Red"}, {5, "Dark Red 1"}, {6, "Dark Red 2"},
+            {7, "Hot Pink 1"}, {8, "Hot Pink 2"}, {9, "Bright Purple"}, {10, "Light Purple 1"},
+            {11, "Light Purple 2"}, {12, "Purple"}, {13, "Dark Purple 1"}, {14, "Dark Purple 2"},
+            {15, "Dark Blue"}, {16, "Blue"}, {17, "Light Blue 1"}, {18, "Light Blue 2"},
+            {19, "Cyan"}, {20, "Light Green 1"}, {21, "Light Green 2"}, {22, "Light Green 3"},
+            {23, "Green"}, {24, "Green 2"}, {25, "Dark Green 1"}, {26, "Dark Green 2"},
+            {27, "Dark Green 3"}, {28, "Light Yellow"}, {29, "Yellow"}, {30, "Dark Yellow"},
+            {31, "Orange"}, {32, "Dark Orange"}, {33, "Brown"}, {34, "Olive"},
+            {35, "Skin"}
+        };
+        private int previousItemCount = 0;
+
         public static float jumpForce = 1f;
         public static float customGravity = 1f;
         public static int extraJumps = 0;
@@ -253,12 +275,6 @@ namespace dark_cheat
         private List<ItemTeleport.GameItem> itemList = new List<ItemTeleport.GameItem>();
         private int selectedItemIndex = 0;
         private Vector2 itemScrollPosition = Vector2.zero;
-        private int previousItemCount = 0;
-        private bool isDragging = false;
-        private Vector2 dragOffset;
-        private float menuX = 50f;
-        private float menuY = 50f;
-        private const float titleBarHeight = 30f;
 
         private List<string> availableItemsList = new List<string>();
         private int selectedItemToSpawnIndex = 0;
@@ -288,6 +304,12 @@ namespace dark_cheat
         private Vector2 dragOffsetActionSelector;
         private GUIStyle overlayDimStyle;
         private GUIStyle actionSelectorBoxStyle;
+
+        private bool isDragging = false;
+        private Vector2 dragOffset;
+        private float menuX = 100f;
+        private float menuY = 100f;
+        private float titleBarHeight = 30f;
 
         private void CheckIfHost()
         {
@@ -1039,7 +1061,7 @@ namespace dark_cheat
                             espYPos += childSpacing;
                             DebugCheats.showEnemyHP = UIHelper.Checkbox("Health", DebugCheats.showEnemyHP, 20, espYPos);
                             espYPos += childSpacing;
-                            
+
                         }
 
                         // Item ESP section
@@ -1053,7 +1075,7 @@ namespace dark_cheat
                             espYPos += childSpacing;
                             DebugCheats.showItemNames = UIHelper.Checkbox("Names", DebugCheats.showItemNames, 20, espYPos);
                             espYPos += childSpacing;
-                            
+
                             DebugCheats.showItemDistance = UIHelper.Checkbox("Distance", DebugCheats.showItemDistance, 20, espYPos);
                             espYPos += childSpacing;
 
@@ -1085,7 +1107,7 @@ namespace dark_cheat
                             DebugCheats.showPlayerDeathHeads = UIHelper.Checkbox("Dead Player Heads", DebugCheats.showPlayerDeathHeads, 20, espYPos);
                             espYPos += childSpacing;
                         }
-                        
+
                         // Chams Color Picker Section
                         if (DebugCheats.drawChamsBool || DebugCheats.drawItemChamsBool)
                         {
@@ -1096,25 +1118,25 @@ namespace dark_cheat
                             espYPos += parentSpacing;
 
                             float currentY = 10;
-                            
+
                             if (showColorPicker)
                             {
                                 // Color option selection
                                 GUI.Label(new Rect(280, currentY, 200, 20), "         Select color to modify:", GUI.skin.label);
                                 currentY += childIndent;
-                                
+
                                 string[] colorOptions = new string[] {
-                                    "Enemy Visible", 
-                                    "Enemy Hidden", 
-                                    "Item Visible", 
+                                    "Enemy Visible",
+                                    "Enemy Hidden",
+                                    "Item Visible",
                                     "Item Hidden"
                                 };
-                                
+
                                 for (int i = 0; i < colorOptions.Length; i++)
                                 {
                                     bool isSelected = selectedColorOption == i;
                                     GUIStyle optionStyle = new GUIStyle(GUI.skin.button);
-                                    
+
                                     // Get the current color for preview
                                     Color previewColor;
                                     switch (i)
@@ -1125,11 +1147,11 @@ namespace dark_cheat
                                         case 3: previewColor = DebugCheats.itemHiddenColor; break;
                                         default: previewColor = Color.white; break;
                                     }
-                                    
+
                                     // Set button background to the current color
                                     optionStyle.normal.background = MakeSolidBackground(previewColor, 1f);
                                     optionStyle.normal.textColor = GetContrastColor(previewColor);
-                                    
+
                                     if (GUI.Button(new Rect(285, currentY, 200, 30), colorOptions[i], optionStyle))
                                     {
                                         selectedColorOption = i;
@@ -1148,28 +1170,28 @@ namespace dark_cheat
                                     case 3: currentColor = DebugCheats.itemHiddenColor; break;
                                     default: currentColor = Color.white; break;
                                 }
-                                
+
                                 // RGB sliders
                                 GUI.Label(new Rect(285, currentY, 200, 20), "Red:", GUI.skin.label);
                                 currentY += childIndent;
                                 float r = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.r, 0f, 1f);
                                 currentY += childSpacing;
-                                
+
                                 GUI.Label(new Rect(285, currentY, 200, 20), "Green:", GUI.skin.label);
                                 currentY += childIndent;
                                 float g = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.g, 0f, 1f);
                                 currentY += childSpacing;
-                                
+
                                 GUI.Label(new Rect(285, currentY, 200, 20), "Blue:", GUI.skin.label);
                                 currentY += childIndent;
                                 float b = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.b, 0f, 1f);
                                 currentY += childSpacing;
-                                
+
                                 GUI.Label(new Rect(285, currentY, 200, 20), "Opacity:", GUI.skin.label);
                                 currentY += childIndent;
                                 float a = GUI.HorizontalSlider(new Rect(285, currentY, 200, 20), currentColor.a, 0f, 1f);
                                 currentY += childSpacing;
-                                
+
                                 // Update the color if any slider changed
                                 Color newColor = new Color(r, g, b, a);
                                 if (newColor != currentColor)
@@ -1233,9 +1255,9 @@ namespace dark_cheat
                         float playerListViewHeight = Math.Min(200, Math.Max(playerListContentHeight, 35)); // Min height of 35 for at least one row
 
                         playerScrollPosition = GUI.BeginScrollView(
-                            new Rect(0, combatYPos, 540, playerListViewHeight), 
-                            playerScrollPosition, 
-                            new Rect(0, 0, 520, playerListContentHeight), 
+                            new Rect(0, combatYPos, 540, playerListViewHeight),
+                            playerScrollPosition,
+                            new Rect(0, 0, 520, playerListContentHeight),
                             false, true);
                         for (int i = 0; i < playerNames.Count; i++)
                         {
@@ -1548,23 +1570,18 @@ namespace dark_cheat
                         float spoofStartX = (540f - totalSpoofRowWidth) / 2f;
                         float spoofTextBoxWidth = 540f - spoofButtonWidth - spoofDropdownWidth - (2 * spoofSpacing);
 
-                        GUI.color = spoofNameEnabled ? Color.green : Color.white; // [Spoof Name] Button
                         if (GUI.Button(new Rect(spoofStartX, miscYPos, spoofButtonWidth, spoofHeight), "Spoof Name"))
                         {
-                            spoofNameEnabled = !spoofNameEnabled;
-                            if (spoofNameEnabled)
-                            { // Enable spoofing
+                            if (!string.IsNullOrEmpty(spoofedNameText))
+                            {
                                 ChatHijack.ToggleNameSpoofing(true, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
                                 DLog.Log("Spoofed name to " + spoofedNameText);
                             }
                             else
                             {
-                                // Disable spoofing, but do NOT clear spoofedNameText.
-                                ChatHijack.ToggleNameSpoofing(false, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
-                                DLog.Log("Reset names to original. Spoof text retained: " + spoofedNameText);
+                                DLog.Log("Please enter a name to spoof");
                             }
                         }
-                        GUI.color = Color.white;
 
                         if (GUI.Button(new Rect(spoofStartX + spoofButtonWidth + spoofSpacing, miscYPos, spoofDropdownWidth, spoofHeight), spoofTargetVisibleName))
                         { // [Dropdown: Player List]
@@ -1586,8 +1603,8 @@ namespace dark_cheat
                                     spoofTargetVisibleName = name;
                                     spoofDropdownVisible = false;
 
-                                    if (spoofNameEnabled && !string.IsNullOrEmpty(spoofedNameText))
-                                    { // Update spoofing if already enabled when changing target
+                                    if (!string.IsNullOrEmpty(spoofedNameText))
+                                    { // Update spoofing if text is entered when changing target
                                         ChatHijack.ToggleNameSpoofing(true, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
                                         DLog.Log("Updated spoofing target to " + spoofTargetVisibleName);
                                     }
@@ -1595,6 +1612,94 @@ namespace dark_cheat
                                 miscYPos += 25f;
                             }
                             miscYPos += 5f;
+                        }
+
+                        // Add a new button to reset the spoofed name
+                        if (GUI.Button(new Rect(spoofStartX, miscYPos, 540, 30), "Reset Spoofed Name"))
+                        {
+                            ChatHijack.ToggleNameSpoofing(false, "", spoofTargetVisibleName, playerList, playerNames);
+                            spoofedNameText = "";
+                            DLog.Log("Reset names to original and cleared text.");
+                        }
+                        miscYPos += 35f;
+
+                        // === Color Change ===
+                        float colorButtonWidth = 120f;
+                        float colorDropdownWidth = 130f;
+                        float colorSpacing = 10f;
+                        float colorHeight = 30f;
+                        float totalColorRowWidth = colorButtonWidth + colorSpacing + colorDropdownWidth + colorSpacing + (540f - colorButtonWidth - colorDropdownWidth - (2 * colorSpacing));
+                        float colorStartX = (540f - totalColorRowWidth) / 2f;
+                        float colorTextBoxWidth = 540f - colorButtonWidth - colorDropdownWidth - (2 * colorSpacing);
+
+                        if (GUI.Button(new Rect(colorStartX, miscYPos, colorButtonWidth, colorHeight), "Spoof Color"))
+                        {
+                            string targetName = colorTargetVisibleName;
+                            int colorIndex;
+                            if (int.TryParse(colorIndexText, out colorIndex))
+                            {
+                                // Use the full range of colors (0-35)
+                                colorIndex = Mathf.Clamp(colorIndex, 0, 35);
+                                if (colorNameMapping.ContainsKey(colorIndex))
+                                {
+                                    ChatHijack.ChangePlayerColor(colorIndex, targetName, playerList, playerNames);
+                                    DLog.Log($"Changed color to {colorIndex} ({colorNameMapping[colorIndex]}) for {targetName}");
+                                }
+                                else
+                                {
+                                    DLog.Log($"Invalid color index: {colorIndex}");
+                                }
+                            }
+                        }
+
+                        if (GUI.Button(new Rect(colorStartX + colorButtonWidth + colorSpacing, miscYPos, colorDropdownWidth, colorHeight), colorTargetVisibleName))
+                        {
+                            colorDropdownVisible = !colorDropdownVisible;
+                        }
+
+                        if (GUI.Button(new Rect(colorStartX + colorButtonWidth + colorSpacing + colorDropdownWidth + colorSpacing, miscYPos, colorTextBoxWidth, colorHeight),
+                            int.TryParse(colorIndexText, out int selectedColorIndex) && colorNameMapping.ContainsKey(selectedColorIndex) ? colorNameMapping[selectedColorIndex] : "Select Color"))
+                        {
+                            showColorIndexDropdown = !showColorIndexDropdown;
+                        }
+                        miscYPos += colorHeight + 5f;
+
+                        if (colorDropdownVisible)
+                        {
+                            for (int i = 0; i < playerNames.Count + 1; i++)
+                            {
+                                string name = (i == 0) ? "All" : playerNames[i - 1];
+                                if (GUI.Button(new Rect(colorStartX + colorButtonWidth + colorSpacing, miscYPos, colorDropdownWidth, 25f), name))
+                                {
+                                    colorTargetVisibleName = name;
+                                    colorDropdownVisible = false;
+                                }
+                                miscYPos += 25f;
+                            }
+                            miscYPos += 5f;
+                        }
+
+                        if (showColorIndexDropdown)
+                        {
+                            int itemHeight = 25;
+                            int maxVisibleItems = 6;
+                            int visibleItems = Math.Min(colorNameMapping.Count, maxVisibleItems);
+                            float dropdownHeight = visibleItems * itemHeight;
+
+                            Rect dropdownRect = new Rect(colorStartX + colorButtonWidth + colorSpacing + colorDropdownWidth + colorSpacing, miscYPos, colorTextBoxWidth, dropdownHeight);
+                            Rect colorContentRect = new Rect(0, 0, colorTextBoxWidth - 20, colorNameMapping.Count * itemHeight);
+                            colorIndexScrollPosition = GUI.BeginScrollView(dropdownRect, colorIndexScrollPosition, colorContentRect, false, true);
+
+                            foreach (var colorEntry in colorNameMapping)
+                            {
+                                if (GUI.Button(new Rect(0, (colorEntry.Key - 1) * itemHeight, colorTextBoxWidth - 20, itemHeight), colorEntry.Value))
+                                {
+                                    colorIndexText = colorEntry.Key.ToString();
+                                    showColorIndexDropdown = false;
+                                }
+                            }
+                            GUI.EndScrollView();
+                            miscYPos += dropdownHeight + 5f;
                         }
 
                         // Chat Spoof UI Layout
@@ -1658,9 +1763,9 @@ namespace dark_cheat
                         float enemyListViewHeight = Math.Min(200, Math.Max(enemyListContentHeight, 35)); // Min height of 35 for at least one row
 
                         enemyScrollPosition = GUI.BeginScrollView(
-                            new Rect(0, enemyYPos, 540, enemyListViewHeight), 
-                            enemyScrollPosition, 
-                            new Rect(0, 0, 520, enemyListContentHeight), 
+                            new Rect(0, enemyYPos, 540, enemyListViewHeight),
+                            enemyScrollPosition,
+                            new Rect(0, 0, 520, enemyListContentHeight),
                             false, true);
                         for (int i = 0; i < enemyNames.Count; i++)
                         {
@@ -1772,8 +1877,8 @@ namespace dark_cheat
                                 }
                             }
                         }
-/*
-                        // --- SPAWN UI SECTION --- // COMMENTED OUT - TOO UNSTABLE
+
+                        // --- SPAWN UI SECTION ---
                         float spawnButtonWidth = 100;
                         float spawnCountTextBoxWidth = 50;
                         float spawnDropdownWidth = 200;
@@ -1841,7 +1946,7 @@ namespace dark_cheat
                                     {
                                         spawnCount = 1;
                                     }
-                                    spawnCount = Mathf.Clamp(spawnCount, 1, 99);
+                                    spawnCount = Mathf.Clamp(spawnCount, 1, 10);
 
                                     if (spawnEnemyIndex >= 0 && spawnEnemyIndex < cachedFilteredEnemySetups.Count)
                                     {
@@ -1911,7 +2016,7 @@ namespace dark_cheat
                             GUI.EndScrollView();
                             enemyYPos += dropdownHeight;
                         }
-*/
+
                         GUI.EndScrollView();
                         break;
 
@@ -1925,16 +2030,16 @@ namespace dark_cheat
 
                         UIHelper.Label("Select an item:", 0, itemYPos);
                         itemYPos += childIndent;
-                        
+
                         // Calculate the actual height needed for the item list
                         float itemListItemHeight = 35;
                         float itemListContentHeight = itemList.Count * itemListItemHeight;
                         float itemListViewHeight = Math.Min(200, Math.Max(itemListContentHeight, 35)); // Min height of 35 for at least one row
-                        
+
                         itemScrollPosition = GUI.BeginScrollView(
-                            new Rect(0, itemYPos, 540, itemListViewHeight), 
-                            itemScrollPosition, 
-                            new Rect(0, 0, 520, itemListContentHeight), 
+                            new Rect(0, itemYPos, 540, itemListViewHeight),
+                            itemScrollPosition,
+                            new Rect(0, 0, 520, itemListContentHeight),
                             false, true);
                         for (int i = 0; i < itemList.Count; i++)
                         {
@@ -2269,14 +2374,14 @@ namespace dark_cheat
             }
             return solidTextures[key];
         }
-        
+
         // Helper method to get a contrasting color for text based on background color
         private Color GetContrastColor(Color backgroundColor)
         {
             // Calculate perceived brightness using the formula: 
             // (0.299*R + 0.587*G + 0.114*B)
             float brightness = (0.299f * backgroundColor.r + 0.587f * backgroundColor.g + 0.114f * backgroundColor.b);
-            
+
             // Return white for dark backgrounds, black for light backgrounds
             return brightness < 0.5f ? Color.white : Color.black;
         }
