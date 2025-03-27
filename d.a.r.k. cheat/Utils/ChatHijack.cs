@@ -54,14 +54,13 @@ namespace dark_cheat
                 SendCustomNameRPC(spoofName, targetName, playerList, playerNames); // Apply the spoof name
                 DLog.Log($"Name spoofing enabled for {targetName}");
             }
-            else if (isSpoofingActive)
+            else
             {
                 RestoreOriginalNames(targetName, playerList, playerNames); // Restore original names
                 isSpoofingActive = false;
                 DLog.Log("Name spoofing disabled, original names restored");
             }
         }
-
         private static void StoreOriginalNames(List<object> playerList, List<string> playerNames)
         {
             for (int i = 0; i < playerList.Count; i++) // Store original player names before spoofing
@@ -147,6 +146,44 @@ namespace dark_cheat
 
                 photonView.RPC("AddToStatsManagerRPC", RpcTarget.AllBuffered, spoofName, "472644");
                 DLog.Log($"Sent spoof name '{spoofName}' to {playerName}.");
+            }
+        }
+        public static void ChangePlayerColor(int colorIndex, string targetName, List<object> playerList, List<string> playerNames)
+        {
+            if (playerList == null || playerNames == null || playerList.Count != playerNames.Count)
+            {
+                DLog.Log("Invalid player list or mismatched lengths.");
+                return;
+            }
+
+            string cleanTargetName = StripStatusTags(targetName);
+
+            for (int i = 0; i < playerList.Count; i++)
+            {
+                string playerName = playerNames[i];
+                object player = playerList[i];
+
+                string cleanPlayerName = StripStatusTags(playerName);
+
+                if (cleanTargetName != "All" && cleanPlayerName != cleanTargetName)
+                    continue;
+
+                var photonViewField = player.GetType().GetField("photonView", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (photonViewField == null)
+                {
+                    DLog.Log($"PhotonView field not found for {playerName}.");
+                    continue;
+                }
+
+                PhotonView photonView = photonViewField.GetValue(player) as PhotonView;
+                if (photonView == null)
+                {
+                    DLog.Log($"PhotonView is null for {playerName}.");
+                    continue;
+                }
+
+                photonView.RPC("SetColorRPC", RpcTarget.AllBuffered, colorIndex);
+                DLog.Log($"Changed color for {playerName} to index {colorIndex}.");
             }
         }
         public static void ClearStoredNames() // Clear stored names
