@@ -1,4 +1,4 @@
-# beta-d.a.r.k.-cheat | [Discord](https://discord.gg/RAR8D26P4s)
+# beta-d.a.r.k.-cheat | [Discord](https://discord.gg/RAR8D26P4s) | [Launcher](https://github.com/hdunl/DarkInjector/releases/latest)
 <sub>*Made by [D4rkks](https://github.com/D4rkks) (and contributors)* | **v1.2**</sub>
 
 # **FUNCTIONS:**
