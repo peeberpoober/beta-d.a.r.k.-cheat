@@ -629,7 +629,7 @@ namespace dark_cheat
             Hax2.crouchSpeed = GetFloat("CrouchSpeed", 3f);
             Hax2.crouchDelay = GetFloat("CrouchTimeMin", 0.2f);
             Hax2.customGravity = GetFloat("CustomGravity", 9.81f);
-            Hax2.extraJumps = GetInt("JumpExtra", 1); // oops - we cant set this 0 as int
+            Hax2.extraJumps = GetInt("JumpExtra", 0); // oops - we cant set this 0 as int
             Hax2.flashlightIntensity = 1f;
 
             Hax2.fieldOfView = 70f;

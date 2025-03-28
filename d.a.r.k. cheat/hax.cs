@@ -191,6 +191,8 @@ namespace dark_cheat
         public static bool unlimitedBatteryActive = false;
         public static UnlimitedBattery unlimitedBatteryComponent;
         public static bool blindEnemies = false;
+        public static bool forceMuteActivated = false;
+        public static bool forceUnmute = false;
         private Vector2 playerScrollPosition = Vector2.zero;
         private Vector2 enemyScrollPosition = Vector2.zero;
         private int teleportPlayerSourceIndex = 0;  // Default to first player in list
@@ -234,7 +236,7 @@ namespace dark_cheat
         private string originalSteamName = Steamworks.SteamClient.Name; // Store real name at startup
         public static bool spoofNameActive = false;
         private float lastSpoofTime = 0f;
-        private const float NAME_SPOOF_DELAY = 4f;
+        private const float NAME_SPOOF_DELAY = 3f;
         static public bool hasAlreadySpoofed = false;
 
         // Color change UI variables
@@ -347,7 +349,6 @@ namespace dark_cheat
         }
         private void CheckForLevelChange()
         {
-            float now = Time.time;
             string currentLevelName = RunManager.instance.levelCurrent != null ? RunManager.instance.levelCurrent.name : ""; // Get current level name
             if (currentLevelName != previousLevelName && !string.IsNullOrEmpty(currentLevelName) && !pendingLevelUpdate) // Check if level has just changed
             {
@@ -359,18 +360,6 @@ namespace dark_cheat
                 showSourceDropdown = false; // Reset dropdown states immediately to ensure clean UI after level change
                 showDestDropdown = false;
                 showEnemyTeleportDropdown = false;
-            }
-            if (currentLevelName != "Level - Main Menu")
-            {
-                if (spoofNameActive)
-                { 
-                    if (now - lastSpoofTime >= NAME_SPOOF_DELAY)
-                    {  
-                        ChatHijack.ToggleNameSpoofing(spoofNameActive, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
-                        lastSpoofTime = now;  
-                    }
-                    
-                }
             }
             if (pendingLevelUpdate && Time.time >= levelChangeDetectedTime + LEVEL_UPDATE_DELAY) // Check if it's time to perform the delayed update
             {
@@ -533,6 +522,21 @@ namespace dark_cheat
                 {
                     NoclipController.UpdateMovement();
                 }
+            }
+
+if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameActive)
+            {  
+                DLog.Log("not already spoofed");
+
+                DLog.Log("spoof name active");
+                if (Time.time - lastSpoofTime >= NAME_SPOOF_DELAY)
+                {
+                    ChatHijack.ToggleNameSpoofing(spoofNameActive, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
+                    DLog.Log("Name spoofing method called successfully");
+                    lastSpoofTime = Time.time;
+                }
+
+
             }
         }
 
@@ -1483,10 +1487,20 @@ namespace dark_cheat
                         GUI.EndScrollView();
                         miscYPos += miscPlayerListViewHeight + 15;
 
-                        if (UIHelper.Button("Force Mute", 0, miscYPos)) MiscFeatures.ForcePlayerMicVolume(-9999999);
-                        miscYPos += parentSpacing;
+                        bool newMuteState = UIHelper.ButtonBool("Force Mute", forceMuteActivated, 0, miscYPos);
+                        if (newMuteState != forceMuteActivated) { MiscFeatures.ForcePlayerMicVolume(-9999999); forceMuteActivated = newMuteState; DLog.Log("Mute toggled: " + forceMuteActivated); forceUnmute = false; }
+                        else
+                        {
+                            if (!forceMuteActivated && !forceUnmute)
+                            {
+                                forceUnmute = true;
+                                MiscFeatures.ForcePlayerMicVolume(100);
+                            }
+                        }
+                            miscYPos += parentSpacing;
 
-                        if (UIHelper.Button("Force High Volume", 0, miscYPos)) MiscFeatures.ForcePlayerMicVolume(9999999);
+
+                        if (UIHelper.Button("Force High Volume", 0, miscYPos)) { MiscFeatures.ForcePlayerMicVolume(9999999); forceUnmute = false; }
                         miscYPos += parentSpacing;
 
                         if (UIHelper.Button("Kick Player", 0, miscYPos)) { MiscFeatures.CrashSelectedPlayerNew(); DLog.Log("Attempting to crash player: " + playerNames[selectedPlayerIndex]); }
