@@ -169,9 +169,9 @@ namespace dark_cheat
         private float levelCheckTimer = 0f;
         private const float LEVEL_CHECK_INTERVAL = 5.0f;
         private string previousLevelName = "";
-        private bool pendingLevelUpdate = false;
+        private bool pendingLevel = false;
         private float levelChangeDetectedTime = 0f;
-        private const float LEVEL_UPDATE_DELAY = 3.0f;
+        private const float LEVEL__DELAY = 3.0f;
         public static int selectedPlayerIndex = 0;
         public static List<string> playerNames = new List<string>();
         public static List<object> playerList = new List<object>();
@@ -324,7 +324,7 @@ namespace dark_cheat
             isHost = !SemiFunc.IsMultiplayer() || PhotonNetwork.IsMasterClient;
         }
 
-        private void UpdateTeleportOptions()
+        private void TeleportOptions()
         {
             List<string> sourceOptions = new List<string>(); // Create source array with "All" option + players
             sourceOptions.Add("All Players"); // Add "All" as the first option
@@ -337,7 +337,7 @@ namespace dark_cheat
             teleportPlayerSourceIndex = 0;  // Reset selections to defaults // Default to "All"
             teleportPlayerDestIndex = teleportPlayerDestOptions.Length - 1;  // Default to void
         }
-        private void UpdateEnemyTeleportOptions()
+        private void EnemyTeleportOptions()
         {
             List<string> destOptions = new List<string>();
             destOptions.AddRange(playerNames); // Add all players (including local player)
@@ -524,7 +524,7 @@ namespace dark_cheat
                 }
             }
 
-if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameActive)
+            if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameActive)
             {  
                 DLog.Log("not already spoofed");
 
