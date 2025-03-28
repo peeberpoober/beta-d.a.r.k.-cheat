@@ -192,6 +192,7 @@ namespace dark_cheat
         public static UnlimitedBattery unlimitedBatteryComponent;
         public static bool blindEnemies = false;
         public static bool forceMuteActivated = false;
+        public static bool forceUnmute = false;
         private Vector2 playerScrollPosition = Vector2.zero;
         private Vector2 enemyScrollPosition = Vector2.zero;
         private int teleportPlayerSourceIndex = 0;  // Default to first player in list
@@ -1487,18 +1488,19 @@ if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameA
                         miscYPos += miscPlayerListViewHeight + 15;
 
                         bool newMuteState = UIHelper.ButtonBool("Force Mute", forceMuteActivated, 0, miscYPos);
-                        if (newMuteState != forceMuteActivated) { MiscFeatures.ForcePlayerMicVolume(-9999999); forceMuteActivated = newMuteState; DLog.Log("Mute toggled: " + forceMuteActivated); }
+                        if (newMuteState != forceMuteActivated) { MiscFeatures.ForcePlayerMicVolume(-9999999); forceMuteActivated = newMuteState; DLog.Log("Mute toggled: " + forceMuteActivated); forceUnmute = false; }
                         else
                         {
-                            if (!forceMuteActivated)
+                            if (!forceMuteActivated && !forceUnmute)
                             {
+                                forceUnmute = true;
                                 MiscFeatures.ForcePlayerMicVolume(100);
                             }
                         }
                             miscYPos += parentSpacing;
-                        
 
-                        if (UIHelper.Button("Force High Volume", 0, miscYPos)) MiscFeatures.ForcePlayerMicVolume(9999999);
+
+                        if (UIHelper.Button("Force High Volume", 0, miscYPos)) { MiscFeatures.ForcePlayerMicVolume(9999999); forceUnmute = false; }
                         miscYPos += parentSpacing;
 
                         if (UIHelper.Button("Kick Player", 0, miscYPos)) { MiscFeatures.CrashSelectedPlayerNew(); DLog.Log("Attempting to crash player: " + playerNames[selectedPlayerIndex]); }
