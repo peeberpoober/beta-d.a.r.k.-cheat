@@ -238,6 +238,7 @@ namespace dark_cheat
         private float lastSpoofTime = 0f;
         private const float NAME_SPOOF_DELAY = 3f;
         static public bool hasAlreadySpoofed = false;
+        private Dictionary<int, bool> playerMuteStates = new Dictionary<int, bool>();
 
         // Color change UI variables
         private string colorTargetVisibleName = "All";
@@ -1487,18 +1488,26 @@ if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameA
                         GUI.EndScrollView();
                         miscYPos += miscPlayerListViewHeight + 15;
 
-                        bool newMuteState = UIHelper.ButtonBool("Force Mute", forceMuteActivated, 0, miscYPos);
-                        if (newMuteState != forceMuteActivated) { MiscFeatures.ForcePlayerMicVolume(-9999999); forceMuteActivated = newMuteState; DLog.Log("Mute toggled: " + forceMuteActivated); forceUnmute = false; }
-                        else
+                        if (!playerMuteStates.ContainsKey(selectedPlayerIndex))
                         {
-                            if (!forceMuteActivated && !forceUnmute)
+                            playerMuteStates[selectedPlayerIndex] = false;
+                        }
+                        bool newMuteState = UIHelper.ButtonBool("Force Mute", playerMuteStates[selectedPlayerIndex], 0, miscYPos);
+                        if (newMuteState != playerMuteStates[selectedPlayerIndex])
+                        {
+                            playerMuteStates[selectedPlayerIndex] = newMuteState;
+                            if (newMuteState)
                             {
-                                forceUnmute = true;
+                                MiscFeatures.ForcePlayerMicVolume(-9999999);
+                                DLog.Log($"Muted player: {playerNames[selectedPlayerIndex]}");
+                            }
+                            else
+                            {
                                 MiscFeatures.ForcePlayerMicVolume(100);
+                                DLog.Log($"Unmuted player: {playerNames[selectedPlayerIndex]}");
                             }
                         }
-                            miscYPos += parentSpacing;
-
+                        miscYPos += parentSpacing;
 
                         if (UIHelper.Button("Force High Volume", 0, miscYPos)) { MiscFeatures.ForcePlayerMicVolume(9999999); forceUnmute = false; }
                         miscYPos += parentSpacing;
