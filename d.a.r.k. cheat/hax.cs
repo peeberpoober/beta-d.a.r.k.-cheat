@@ -1312,7 +1312,7 @@ if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameA
                         }
                         combatYPos += parentSpacing;
 
-                        if (UIHelper.Button("-2 Damage", 0, combatYPos))
+                        if (UIHelper.Button("-1 Damage", 0, combatYPos))
                         {
                             if (selectedPlayerIndex >= 0 && selectedPlayerIndex < playerList.Count)
                             {
