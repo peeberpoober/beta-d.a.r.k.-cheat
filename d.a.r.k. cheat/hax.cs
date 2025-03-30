@@ -527,17 +527,12 @@ namespace dark_cheat
 
 if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameActive)
             {  
-                DLog.Log("not already spoofed");
-
-                DLog.Log("spoof name active");
                 if (Time.time - lastSpoofTime >= NAME_SPOOF_DELAY)
                 {
                     ChatHijack.ToggleNameSpoofing(spoofNameActive, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
                     DLog.Log("Name spoofing method called successfully");
                     lastSpoofTime = Time.time;
                 }
-
-
             }
         }
 
