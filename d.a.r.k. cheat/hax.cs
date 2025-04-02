@@ -217,6 +217,10 @@ namespace dark_cheat
         private Dictionary<int, bool> playerRainbowStates = new Dictionary<int, bool>();
         private Dictionary<int, float> lastRainbowTimes = new Dictionary<int, float>();
 
+        public static bool showTotalValue = true;
+        public static bool showPlayerStatus = true;
+        private int totalValuableValue = 0;
+
         public static string[] levelsToSearchItems = { "Level - Manor", "Level - Wizard", "Level - Arctic", "Level - Shop", "Level - Lobby", "Level - Recording" };
 
         private GUIStyle menuStyle;
@@ -640,23 +644,44 @@ namespace dark_cheat
         private void UpdateItemList()
         {
             DebugCheats.valuableObjects.Clear();
-
+            totalValuableValue = 0;
+        
             var valuableArray = UnityEngine.Object.FindObjectsOfType(Type.GetType("ValuableObject, Assembly-CSharp"));
             if (valuableArray != null)
             {
-                DebugCheats.valuableObjects.AddRange(valuableArray);
+                foreach (var val in valuableArray)
+                {
+                    DebugCheats.valuableObjects.Add(val);
+        
+                    var valueField = val.GetType().GetField("dollarValueCurrent", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (valueField != null)
+                    {
+                        object valueObj = valueField.GetValue(val);
+                        if (valueObj is int intValue)
+                        {
+                            totalValuableValue += intValue;
+                        }
+                        else if (valueObj is float floatValue)
+                        {
+                            totalValuableValue += Mathf.RoundToInt(floatValue);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[Valuable] Unknown value type: {valueObj?.GetType()?.Name}");
+                        }
+                    }
+                }
             }
-
+        
             var playerDeathHeadArray = UnityEngine.Object.FindObjectsOfType(Type.GetType("PlayerDeathHead, Assembly-CSharp"));
             if (playerDeathHeadArray != null)
             {
                 DebugCheats.valuableObjects.AddRange(playerDeathHeadArray);
             }
-
+        
             itemList = ItemTeleport.GetItemList();
             if (itemList.Count != previousItemCount)
             {
-                DLog.Log($"Item list updated: {itemList.Count} items found (including ValuableObject and PlayerDeathHead).");
                 previousItemCount = itemList.Count;
             }
         }
@@ -837,6 +862,72 @@ namespace dark_cheat
                 {
                     return;
                 }
+            }
+
+            GUIStyle boldStyle = new GUIStyle(GUI.skin.label);
+            boldStyle.fontSize = 16;
+            boldStyle.fontStyle = FontStyle.Bold;
+            boldStyle.normal.textColor = Color.white;
+            float startX2 = 20f;
+            float startYX2 = 250f;
+            float lineHeightX2 = 24f;
+            int lineX2 = 0;
+            
+            if (DebugCheats.drawPlayerEspBool && showPlayerStatus)
+            {
+                var allPlayers = SemiFunc.PlayerGetList();
+                if (allPlayers == null) return;
+            
+                List<string> alivePlayers = new List<string>();
+                List<string> deadPlayers = new List<string>();
+            
+                foreach (var player in allPlayers)
+                {
+                    string name = SemiFunc.PlayerGetName(player) ?? "Unknown";
+            
+                    var isDisabledField = player.GetType().GetField("isDisabled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (isDisabledField != null)
+                    {
+                        bool isDisabled = (bool)isDisabledField.GetValue(player);
+                        if (isDisabled)
+                            deadPlayers.Add(name);
+                        else
+                            alivePlayers.Add(name);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[DeathCheck] 'isDisabled' field not found on player: {name}");
+                    }
+                }
+            
+            
+            
+                GUI.color = Color.green;
+                GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), "Alive Players:", boldStyle);
+                foreach (var name in alivePlayers)
+                    GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), $"- {name}");
+            
+                lineX2++; // Adds space
+            
+                GUI.color = Color.red;
+                GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), "Dead Players:", boldStyle);
+                foreach (var name in deadPlayers)
+                    GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), $"- {name}");
+            
+                GUI.color = Color.white;
+            }
+            
+            
+            lineX2++;
+            lineX2++;
+            lineX2++;
+            
+            if (DebugCheats.drawItemEspBool && showTotalValue)
+            {
+                GUI.color = Color.yellow;
+                GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), $"Total Value on Map: ${totalValuableValue}", boldStyle);
+                GUI.color = Color.white;
+                lineX2++;
             }
 
             if (showMenu)
@@ -1151,6 +1242,9 @@ namespace dark_cheat
                             DebugCheats.showItemDistance = UIHelper.Checkbox("Distance", DebugCheats.showItemDistance, 20, espYPos);
                             espYPos += childSpacing;
 
+                            showTotalValue = UIHelper.Checkbox("Total Value on Map", showItemDistance, 20, espYPos);
+                            espYPos += childSpacing;
+
                             // Item Distance slider (only shown when Show Item Distance is enabled)
                             if (DebugCheats.showItemDistance)
                             {
@@ -1304,6 +1398,8 @@ namespace dark_cheat
                             DebugCheats.showPlayerDistance = UIHelper.Checkbox("Distance", DebugCheats.showPlayerDistance, 20, espYPos);
                             espYPos += childSpacing;
                             DebugCheats.showPlayerHP = UIHelper.Checkbox("Health", DebugCheats.showPlayerHP, 20, espYPos);
+                            espYPos += childSpacing;
+                            showPlayerStatus = UIHelper.Checkbox("Show Alive / Dead Players on screen", showPlayerStatus, 20, espYPos);
                             espYPos += childSpacing;
                         }
 
