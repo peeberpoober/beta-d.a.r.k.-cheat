@@ -121,7 +121,8 @@ namespace dark_cheat
         private bool spoofNameEnabled = false;
         private string spoofTargetVisibleName = "All";
         private bool spoofDropdownVisible = false;
-        public static string spoofedNameText = "";
+        public static string spoofedNameText = "Text";
+        public static string persistentNameText = "Text";
         private string originalSteamName = Steamworks.SteamClient.Name; // Store real name at startup
         public static bool spoofNameActive = false;
         private float lastSpoofTime = 0f;
@@ -265,18 +266,6 @@ namespace dark_cheat
                 showSourceDropdown = false; // Reset dropdown states immediately to ensure clean UI after level change
                 showDestDropdown = false;
                 showEnemyTeleportDropdown = false;
-            }
-            if (currentLevelName != "Level - Main Menu")
-            {
-                if (spoofNameActive)
-                { 
-                    if (now - lastSpoofTime >= NAME_SPOOF_DELAY)
-                    {  
-                        ChatHijack.ToggleNameSpoofing(spoofNameActive, spoofedNameText, spoofTargetVisibleName, playerList, playerNames);
-                        lastSpoofTime = now;  
-                    }
-                    
-                }
             }
             if (pendingLevelUpdate && Time.time >= levelChangeDetectedTime + LEVEL_UPDATE_DELAY) // Check if it's time to perform the delayed update
             {
@@ -1240,8 +1229,8 @@ namespace dark_cheat
 
             // Force Host + Level Dropdown
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Force Host [Broken]", buttonStyle)) ForceHost.Instance.StartCoroutine(ForceHost.Instance.ForceStart(availableLevels[selectedLevelIndex]));
-            if (GUILayout.Button(availableLevels[selectedLevelIndex], buttonStyle)) showLevelDropdown = !showLevelDropdown;
+            //if (GUILayout.Button("Force Host [Broken]", buttonStyle)) ForceHost.Instance.StartCoroutine(ForceHost.Instance.ForceStart(availableLevels[selectedLevelIndex]));
+            //if (GUILayout.Button(availableLevels[selectedLevelIndex], buttonStyle)) showLevelDropdown = !showLevelDropdown;
             GUILayout.EndHorizontal();
 
             if (showLevelDropdown)
@@ -1302,7 +1291,11 @@ namespace dark_cheat
             }
             GUILayout.Space(10);
 
-            ToggleLogic("toggle_spoof_name", " Toggle Spoof Name", ref spoofNameActive, null);
+            ToggleLogic("persistent_spoof_name", " Persistent Spoof Name", ref spoofNameActive, null);
+            if (spoofNameActive)
+            {
+                persistentNameText = GUILayout.TextField(spoofedNameText, textFieldStyle, GUILayout.Width(210));
+            }
 
             GUILayout.Space(10);
 

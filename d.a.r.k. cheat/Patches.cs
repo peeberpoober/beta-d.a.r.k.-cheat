@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Photon.Pun;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,50 @@ namespace dark_cheat
             static bool Prefix(int button, ref bool __result)
             {
                 if (Hax2.showMenu) { __result = false; return false; }
+                return true;
+            }
+        }
+
+        //Patch interaction with items, doors, players when menu is open
+        [HarmonyPatch(typeof(PhysGrabber), "RayCheck")]
+        public class Patch_PhysGrabber_RayCheck
+        {
+            static bool Prefix(bool _grab)
+            {
+                if (Hax2.showMenu)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerAvatar), "AddToStatsManager")]
+        public class Patch_AddToStatsManager
+        {
+            static bool Prefix(PlayerAvatar __instance)
+            {
+                if (Hax2.spoofNameActive)
+                {
+                    // Define your fake values here.
+                    string fakeName = Hax2.persistentNameText;
+                    string fakeSteamId = "765611472644157498";
+
+                    // Branch based on multiplayer mode.
+                    if (GameManager.Multiplayer())
+                    {
+                        if (__instance.photonView.IsMine)
+                        {
+                            __instance.photonView.RPC("AddToStatsManagerRPC", RpcTarget.AllBuffered, new object[] { fakeName, fakeSteamId });
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        __instance.AddToStatsManagerRPC(fakeName, fakeSteamId);
+                        return false;
+                    }
+                }
                 return true;
             }
         }
