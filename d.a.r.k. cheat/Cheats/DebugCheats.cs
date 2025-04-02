@@ -942,9 +942,26 @@ namespace dark_cheat
 
             if (drawEspBool)
             {
+                // Clean up broken/destroyed enemy instances
+                enemyList.RemoveAll(enemyInstance =>
+                {
+                    try
+                    {
+                        // Check for null or destroyed objects.
+                        return enemyInstance == null ||
+                               enemyInstance.gameObject == null ||
+                               enemyInstance.CenterTransform == null;
+                    }
+                    catch
+                    {
+                        return true;
+                    }
+                });
+
                 foreach (var enemyInstance in enemyList)
                 {
-                    if (enemyInstance == null || !enemyInstance.gameObject.activeInHierarchy || enemyInstance.CenterTransform == null) continue;
+                    if (enemyInstance == null || !enemyInstance.gameObject.activeInHierarchy || enemyInstance.CenterTransform == null)
+                        continue;
 
                     Vector3 footPosition = enemyInstance.transform.position;
                     float enemyHeightEstimate = 2f;
@@ -986,7 +1003,7 @@ namespace dark_cheat
                             var nameField = enemyParent.GetType().GetField("enemyName", BindingFlags.Public | BindingFlags.Instance);
                             enemyName = nameField?.GetValue(enemyParent) as string ?? "Enemy";
                         }
-                        
+
                         string healthText = "";
                         if (showEnemyHP && enemyHealthCache.ContainsKey(enemyInstance))
                         {
@@ -1010,17 +1027,19 @@ namespace dark_cheat
 
                         float labelHeight = enemyStyle.CalcHeight(new GUIContent(fullText), labelWidth);
                         float labelY = y - height - labelHeight;
-                        
+
                         // Calculate height for health text if shown
                         float healthLabelHeight = 0f;
-                        if (showEnemyHP && !string.IsNullOrEmpty(healthText)) {
+                        if (showEnemyHP && !string.IsNullOrEmpty(healthText))
+                        {
                             healthLabelHeight = healthStyle.CalcHeight(new GUIContent(healthText), labelWidth);
                         }
 
                         GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), fullText, enemyStyle);
-                        
+
                         // Display health text if enabled
-                        if (showEnemyHP && !string.IsNullOrEmpty(healthText)) {
+                        if (showEnemyHP && !string.IsNullOrEmpty(healthText))
+                        {
                             GUI.Label(new Rect(labelX, labelY - healthLabelHeight, labelWidth, healthLabelHeight), healthText, healthStyle);
                         }
                     }
