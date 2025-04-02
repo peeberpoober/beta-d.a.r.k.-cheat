@@ -132,7 +132,6 @@ namespace dark_cheat
                 {
                     playerSetColorMethod.Invoke(colorControllerInstance, new object[] { colorIndex });
                     lastColorChangeTime = Time.time;
-                    DLog.Log($"Local player color changed to index: {colorIndex}");
                 }
                 catch (Exception e)
                 {

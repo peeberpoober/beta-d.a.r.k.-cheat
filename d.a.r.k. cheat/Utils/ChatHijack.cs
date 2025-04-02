@@ -183,7 +183,6 @@ namespace dark_cheat
                 }
 
                 photonView.RPC("SetColorRPC", RpcTarget.AllBuffered, colorIndex);
-                DLog.Log($"Changed color for {playerName} to index {colorIndex}.");
             }
         }
         public static void ClearStoredNames() // Clear stored names

@@ -211,6 +211,11 @@ namespace dark_cheat
         private float enemyTeleportDropdownWidth = 200f;
         private float enemyTeleportTotalWidth;
         private float enemyTeleportStartX;
+        public static bool killLoopActive = false;
+        private Dictionary<int, bool> playerKillLoopStates = new Dictionary<int, bool>();
+        private Dictionary<int, float> lastKillTimes = new Dictionary<int, float>();
+        private Dictionary<int, bool> playerRainbowStates = new Dictionary<int, bool>();
+        private Dictionary<int, float> lastRainbowTimes = new Dictionary<int, float>();
 
         public static string[] levelsToSearchItems = { "Level - Manor", "Level - Wizard", "Level - Arctic", "Level - Shop", "Level - Lobby", "Level - Recording" };
 
@@ -319,6 +324,11 @@ namespace dark_cheat
         private float menuX = 100f;
         private float menuY = 100f;
         private float titleBarHeight = 30f;
+        private float lastKillTime = 0f;
+        private float KILL_LOOP_DELAY = 0.9f;
+        private float lastRainbowTime = 0f;
+        private float PLAYER_RAINBOW_DELAY = 0.1f;
+        private System.Random rainbowRandom = new System.Random();
 
         private void CheckIfHost()
         {
@@ -525,7 +535,7 @@ namespace dark_cheat
                 }
             }
 
-if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameActive)
+            if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameActive)
             {  
                 if (Time.time - lastSpoofTime >= NAME_SPOOF_DELAY)
                 {
@@ -533,6 +543,50 @@ if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameA
                     DLog.Log("Name spoofing method called successfully");
                     lastSpoofTime = Time.time;
                 }
+            }
+
+            foreach (var entry in playerKillLoopStates)
+            {
+                int playerIndex = entry.Key;
+                bool isKillLoopEnabled = entry.Value;
+
+                if (isKillLoopEnabled)
+                {
+                    // Initialize lastKillTime for this player if it doesn't exist
+                    if (!lastKillTimes.ContainsKey(playerIndex))
+                    {
+                        lastKillTimes[playerIndex] = Time.time;
+                    }
+
+                    // Check if it's time to kill/revive this player
+                    if (Time.time - lastKillTimes[playerIndex] >= KILL_LOOP_DELAY)
+                    {
+                        Players.KillSelectedPlayer(playerIndex, playerList, playerNames);
+                        Players.ReviveSelectedPlayer(playerIndex, playerList, playerNames);
+                        lastKillTimes[playerIndex] = Time.time;
+                    }
+                }
+            }
+
+            foreach (var entry in playerRainbowStates)
+            {
+                int colorPlayerIndex = entry.Key;
+                bool isRainbowEnabled = entry.Value;
+
+                if (isRainbowEnabled)
+                {
+                    if (!lastRainbowTimes.ContainsKey(colorPlayerIndex))
+                    {
+                        lastRainbowTimes[colorPlayerIndex] = Time.time;
+                    }
+                    if (Time.time - lastRainbowTimes[colorPlayerIndex] >= PLAYER_RAINBOW_DELAY)
+                    {
+                        var rainbowColorIndex = rainbowRandom.Next(0, 36);
+                        string targetName = colorTargetVisibleName;
+                        ChatHijack.ChangePlayerColor(rainbowColorIndex, targetName, playerList, playerNames);
+                        lastRainbowTimes[colorPlayerIndex] = Time.time;
+                    }
+                } 
             }
         }
 
@@ -1293,6 +1347,22 @@ if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameA
                         if (UIHelper.Button("Kill", 0, combatYPos)) { Players.KillSelectedPlayer(selectedPlayerIndex, playerList, playerNames); DLog.Log("Player killed: " + playerNames[selectedPlayerIndex]); }
                         combatYPos += parentSpacing;
 
+                        if (!playerKillLoopStates.ContainsKey(selectedPlayerIndex))
+                        {
+                            playerKillLoopStates[selectedPlayerIndex] = false;
+                        }
+                        bool newKillLoopState = UIHelper.ButtonBool("Kill Loop", playerKillLoopStates[selectedPlayerIndex], 0, combatYPos);
+                        if (newKillLoopState != playerKillLoopStates[selectedPlayerIndex])
+                        {
+                            playerKillLoopStates[selectedPlayerIndex] = newKillLoopState;
+
+                            if (newKillLoopState)
+                            {
+                                lastKillTimes[selectedPlayerIndex] = Time.time;
+                            }
+                        }
+                        combatYPos += parentSpacing;
+
                         if (UIHelper.Button("Max Heal", 0, combatYPos))
                         {
                             if (selectedPlayerIndex >= 0 && selectedPlayerIndex < playerList.Count)
@@ -1707,6 +1777,21 @@ if (RunManager.instance?.levelCurrent?.name != "Level - Main Menu" && spoofNameA
                             GUI.EndScrollView();
                             miscYPos += dropdownHeight + 5f;
                         }
+
+                        if (!playerRainbowStates.ContainsKey(selectedPlayerIndex))
+                        {
+                            playerRainbowStates[selectedPlayerIndex] = false;
+                        }
+                        bool newRainbowState = UIHelper.ButtonBool("Rainbow spoof", playerRainbowStates[selectedPlayerIndex], 0, miscYPos);
+                        if (newRainbowState != playerRainbowStates[selectedPlayerIndex])
+                        {
+                            playerRainbowStates[selectedPlayerIndex] = newRainbowState;
+                            if (newRainbowState)
+                            {
+                                lastRainbowTimes[selectedPlayerIndex] = Time.time;
+                            }
+                        }
+                        miscYPos += parentSpacing;
 
                         // Chat Spoof UI Layout
                         float chatButtonWidth = 120f; // Match spoofButtonWidth
