@@ -1,4 +1,6 @@
 ﻿using HarmonyLib;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -139,6 +141,67 @@ namespace dark_cheat
 
                     return true;
                 }
+            }
+        }
+
+        // Remove the annoying truck engine at main menu
+        [HarmonyPatch(typeof(Sound), "PlayLoop")]
+        class BlockMenuTruckLoop_PlayLoop
+        {
+            static bool Prefix(object __instance, ref bool playing)
+            {
+                var sourceField = AccessTools.Field(__instance.GetType(), "Source");
+                AudioSource source = sourceField.GetValue(__instance) as AudioSource;
+
+                if (source?.clip != null && source.clip.name == "menu truck engine loop")
+                {
+                    source.Stop();
+                    source.clip = null;
+                    playing = false;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(AudioSource), "Play", new Type[0])]
+        class BlockMultipleMenuSounds_Play
+        {
+            static readonly HashSet<string> BlockedClipNames = new HashSet<string>
+            {
+                "menu truck engine loop",
+                "Ambience Loop Truck Driving",
+                "msc main menu",
+                "menu truck fire pass",
+                "menu truck fire pass swerve01",
+                "menu truck body rustle long01",
+                "menu truck fire pass swerve02",
+                "menu truck body rustle long02",
+                "menu truck skeleton hit",
+                "menu truck body rustle long03",
+                "menu truck skeleton hit skull",
+                "menu truck body rustle short02",
+                "menu truck swerve fast01",
+                "menu truck swerve fast02",
+                "menu truck swerve",
+                "menu truck speed up",
+                "menu truck slow down"
+            };
+
+            static bool Prefix(AudioSource __instance)
+            {
+                if (__instance?.clip != null)
+                {
+                    string name = __instance.clip.name;
+
+                    if (BlockedClipNames.Contains(name))
+                    {
+                        return false; // Block
+                    }
+                }
+
+                return true; // Allow
             }
         }
     }

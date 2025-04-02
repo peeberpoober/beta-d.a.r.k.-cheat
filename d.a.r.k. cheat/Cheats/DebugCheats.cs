@@ -778,9 +778,6 @@ namespace dark_cheat
                 lastUpdateTime = currentTime;
             }
 
-            frameCounter++;
-            if (frameCounter % 2 != 0) return;
-
             if (cachedCamera == null || cachedCamera != Camera.main)
             {
                 cachedCamera = Camera.main;
@@ -1032,19 +1029,44 @@ namespace dark_cheat
 
             if (drawItemEspBool)
             {
+                // Clean up broken/destroyed items
+                valuableObjects.RemoveAll(item =>
+                {
+                    try
+                    {
+                        return item == null || (item is UnityEngine.Object unityObj && unityObj == null);
+                    }
+                    catch { return true; }
+                });
+
                 foreach (var valuableObject in valuableObjects)
                 {
                     if (valuableObject == null) continue;
+
                     bool isPlayerDeathHead = valuableObject.GetType().Name == "PlayerDeathHead";
                     if (!DebugCheats.showPlayerDeathHeads && isPlayerDeathHead) continue;
-                    var transform = valuableObject.GetType().GetProperty("transform", BindingFlags.Public | BindingFlags.Instance)?.GetValue(valuableObject) as Transform;
+
+                    // Safe transform access
+                    Transform transform = null;
+                    try
+                    {
+                        transform = valuableObject?.GetType()?.GetProperty("transform", BindingFlags.Public | BindingFlags.Instance)?.GetValue(valuableObject) as Transform;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"[ESP] Failed to get transform from valuableObject: {e.Message}");
+                        continue;
+                    }
+
                     if (transform == null || !transform.gameObject.activeInHierarchy) continue;
+
                     Vector3 itemPosition = transform.position;
                     float itemDistance = 0f;
+
                     if (localPlayer != null)
                     {
                         itemDistance = Vector3.Distance(localPlayer.transform.position, itemPosition);
-                        if (itemDistance > DebugCheats.maxItemEspDistance) continue; // Skip items beyond the max distance
+                        if (itemDistance > DebugCheats.maxItemEspDistance) continue;
                     }
 
                     if (!isPlayerDeathHead && DebugCheats.showItemValue)
@@ -1056,14 +1078,12 @@ namespace dark_cheat
                             try
                             {
                                 itemValue = Convert.ToInt32(valueField.GetValue(valuableObject));
-
-                                // Skip items below the minimum value
                                 if (itemValue < DebugCheats.minItemValue)
                                     continue;
                             }
                             catch (Exception e)
                             {
-                                DLog.Log($"Error reading 'dollarValueCurrent': {e.Message}. Defaulting to 0.");
+                                Debug.Log($"Error reading 'dollarValueCurrent': {e.Message}. Defaulting to 0.");
                             }
                         }
                     }
@@ -1098,17 +1118,13 @@ namespace dark_cheat
                             catch (Exception e)
                             {
                                 itemName = (valuableObject as UnityEngine.Object)?.name ?? "Unknown";
-                                DLog.Log($"Error accessing item 'name': {e.Message}. Using GameObject name: {itemName}");
+                                Debug.Log($"Error accessing item 'name': {e.Message}. Using GameObject name: {itemName}");
                             }
 
                             if (itemName.StartsWith("Valuable", StringComparison.OrdinalIgnoreCase))
-                            {
                                 itemName = itemName.Substring("Valuable".Length).Trim();
-                            }
                             if (itemName.EndsWith("(Clone)", StringComparison.OrdinalIgnoreCase))
-                            {
                                 itemName = itemName.Substring(0, itemName.Length - "(Clone)".Length).Trim();
-                            }
                         }
 
                         int itemValue = 0;
@@ -1123,12 +1139,11 @@ namespace dark_cheat
                                 }
                                 catch (Exception e)
                                 {
-                                    DLog.Log($"Error reading 'dollarValueCurrent' for '{itemName}': {e.Message}. Defaulting to 0.");
+                                    Debug.Log($"Error reading 'dollarValueCurrent' for '{itemName}': {e.Message}. Defaulting to 0.");
                                 }
                             }
                         }
 
-                        // Set distance color
                         Color distanceColor = isPlayerDeathHead ? Color.red : Color.yellow;
                         nameStyle.normal.textColor = distanceColor;
 
@@ -1149,19 +1164,12 @@ namespace dark_cheat
                         float labelX = x - labelWidth / 2f;
                         float labelY = y - totalHeight - 5f;
 
-                        // Draw Name (with distance included in the same label)
                         if (!string.IsNullOrEmpty(nameText))
-                        {
                             GUI.Label(new Rect(labelX, labelY, labelWidth, nameLabelHeight), nameText, nameStyle);
-                        }
 
-                        // Draw Item Value (if not DeadPlayerHead)
                         if (showItemValue && !isPlayerDeathHead)
-                        {
                             GUI.Label(new Rect(labelX, labelY + nameLabelHeight + 2f, labelWidth, valueLabelHeight), itemValue.ToString() + "$", valueStyle);
-                        }
 
-                        // Draw 3D Item ESP if enabled
                         if (draw3DItemEspBool)
                         {
                             Bounds bounds = GetActiveColliderBounds(transform.gameObject);

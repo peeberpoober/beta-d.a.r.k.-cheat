@@ -12,6 +12,12 @@ namespace dark_cheat
         private static object harmonyInstance;
         private static GameObject Load;
 
+        private static void HandleUnityLog(string condition, string stackTrace, LogType type)
+        {
+            if (type == LogType.Warning && condition.Contains("Unicode value") && condition.Contains("font asset"))
+                return;
+        }
+
         public static void Init()
         {
             try
@@ -47,6 +53,7 @@ namespace dark_cheat
                 Load.AddComponent<Hax2>();
                 UnityEngine.Object.DontDestroyOnLoad(Load);
                 Load.AddComponent<PatchDelay>();
+                Application.logMessageReceived += HandleUnityLog;
             }
             catch (Exception ex)
             {

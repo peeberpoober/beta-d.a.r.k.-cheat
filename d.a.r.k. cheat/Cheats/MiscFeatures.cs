@@ -12,7 +12,7 @@ namespace dark_cheat
         private static float previousFarClip = 0f;
         public static bool NoFogEnabled = false;
 
-        public static void ToggleNoFog(bool enable)
+        public static void ToggleNoFog()
         {
             Camera cam = Camera.main;
             if (cam == null)
@@ -21,14 +21,13 @@ namespace dark_cheat
                 return;
             }
 
-            if (enable)
+            if (NoFogEnabled)
             {
                 if (previousFarClip == 0f)
                     previousFarClip = cam.farClipPlane;
 
                 cam.farClipPlane = 500f;
                 RenderSettings.fog = false;
-                NoFogEnabled = true;
                 DLog.Log("NoFog enabled");
             }
             else
@@ -36,7 +35,6 @@ namespace dark_cheat
                 if (previousFarClip > 0f)
                     cam.farClipPlane = previousFarClip;
                 RenderSettings.fog = true;
-                NoFogEnabled = false;
                 DLog.Log("NoFog disabled");
             }
         }

@@ -86,7 +86,6 @@ namespace dark_cheat
             availableActions.Add(new HotkeyAction("Tumble Guard", () =>
             {
                 bool newTumbleGuardState = !Hax2.debounce;
-                PlayerTumblePatch.ToggleTumbleGuard();
                 Hax2.debounce = newTumbleGuardState;
                 DLog.Log("tumble tuard toggled: " + Hax2.debounce);
             }, "toggles tumble guard on/off"));
