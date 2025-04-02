@@ -1392,7 +1392,7 @@ namespace dark_cheat
             ToggleLogic("persistent_spoof_name", " Persistent Spoof Name", ref spoofNameActive, null);
             if (spoofNameActive)
             {
-                persistentNameText = GUILayout.TextField(spoofedNameText, textFieldStyle, GUILayout.Width(210));
+                persistentNameText = GUILayout.TextField(persistentNameText, textFieldStyle, GUILayout.Width(210));
             }
 
             GUILayout.Space(10);
