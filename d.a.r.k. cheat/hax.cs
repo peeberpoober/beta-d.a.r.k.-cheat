@@ -1913,6 +1913,21 @@ namespace dark_cheat
 
             if (GUILayout.Button("Infinite Loading Screen", buttonStyle)) { Troll.InfiniteLoadingSelectedPlayer(); }
             GUILayout.Space(5);
+
+            if (GUILayout.Button("Crash Selected Player", buttonStyle)) { MiscFeatures.CrashSelectedPlayerNew(); }
+            GUILayout.Space(5);
+
+            if (GUILayout.Button("Crash Lobby", buttonStyle)) 
+            {
+                DLog.Log("Crashing Lobby!");
+                GameObject localPlayer = DebugCheats.GetLocalPlayer();
+                if (localPlayer == null)
+                    return;
+                Vector3 targetPosition = localPlayer.transform.position + Vector3.up * 1.5f;
+                transform.position = targetPosition;
+                CrashLobby.Crash(targetPosition);
+            }
+            GUILayout.Space(5);
         }
 
         void DrawConfigTab()
