@@ -157,6 +157,7 @@ namespace dark_cheat
         public static float crouchDelay = 1f;
         public static float crouchSpeed = 1f;
         public static float grabRange = 1f;
+        public static float tumbleLaunch = 1f;
         public static float throwStrength = 1f;
         public static float slideDecay = 1f;
 
@@ -167,6 +168,7 @@ namespace dark_cheat
         public static float OldextraJumps = 1f;
         public static float OldcrouchSpeed = 1f;
         public static float OldgrabRange = 1f;
+        public static float OldtumbleLaunch = 1f;
         public static float OldthrowStrength = 1f;
         public static float OldslideDecay = 1f;
 
@@ -221,6 +223,8 @@ namespace dark_cheat
         public Texture2D toggleBgTexture;
         public Texture2D toggleKnobOffTexture;
         public Texture2D toggleKnobOnTexture;
+
+        public static bool useModernESP = false;
 
         // === END OF NEW GUI ===
 
@@ -397,20 +401,6 @@ namespace dark_cheat
                     }
                 }
             }
-
-            if (Mathf.Abs(Hax2.sliderValue - Hax2.oldSliderValue) > 0.01f)
-            {
-                PlayerController.SetSprintSpeed(Hax2.sliderValue);
-                Hax2.oldSliderValue = Hax2.sliderValue;
-            }
-
-            if (Mathf.Abs(Hax2.sliderValueStrength - Hax2.oldSliderValueStrength) > 0.01f)
-            {
-                Strength.MaxStrength();
-                Hax2.oldSliderValueStrength = Hax2.sliderValueStrength;
-            }
-
-            Strength.UpdateStrength();
 
             if (RunManager.instance.levelCurrent != null && levelsToSearchItems.Contains(RunManager.instance.levelCurrent.name))
             {
@@ -613,11 +603,25 @@ namespace dark_cheat
                 }
             }
 
-            if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool ||
-            DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool ||
-            DebugCheats.drawChamsBool)
+            if (useModernESP)
             {
-                DebugCheats.DrawESP();
+                if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool ||
+                    DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool ||
+                    DebugCheats.drawChamsBool)
+                {
+                    ModernESP.Render();
+                }
+            }
+            else
+            {
+                if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool ||
+                    DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool ||
+                    DebugCheats.drawChamsBool)
+                {
+                    DebugCheats.DrawESP();
+                    ModernESP.ClearItemLabels();
+                    ModernESP.ClearEnemyLabels();
+                }
             }
 
             GUIStyle style = new GUIStyle(GUI.skin.label) { wordWrap = false };
@@ -846,36 +850,93 @@ namespace dark_cheat
             sliderValueStrength = GUILayout.HorizontalSlider(sliderValueStrength, 0f, 15f, GUILayout.Width(200));
             if (sliderValueStrength != oldSliderValueStrength)
             {
+                int newStrength = Mathf.RoundToInt(sliderValueStrength);
+                string steamID = PlayerController.GetLocalPlayerSteamID();
+
+                PunManager punManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView punManagerView = punManager.GetComponent<PhotonView>();
+
+                if (punManagerView != null)
+                {
+                    punManagerView.RPC("UpgradePlayerGrabStrengthRPC", RpcTarget.AllBuffered, steamID, newStrength);
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+
                 oldSliderValueStrength = sliderValueStrength;
-                Debug.Log("Updated Strength to: " + sliderValueStrength);
             }
 
-            GUILayout.Label("[HOST] Throw Strength: " + Mathf.RoundToInt(throwStrength), labelStyle);
-            throwStrength = GUILayout.HorizontalSlider(throwStrength, 1f, 20f, GUILayout.Width(200));
-            if (Hax2.throwStrength != Hax2.OldthrowStrength)
+            // Display label and slider
+            GUILayout.Label("Throw Strength: " + Mathf.RoundToInt(throwStrength), labelStyle);
+            throwStrength = GUILayout.HorizontalSlider(throwStrength, 0f, 20f, GUILayout.Width(200));
+            if (throwStrength != OldthrowStrength)
             {
-                PlayerController.SetThrowStrength(Hax2.throwStrength);
-                OldthrowStrength = Hax2.throwStrength;
+                int newThrowStrength = Mathf.RoundToInt(throwStrength);
+                string steamID = PlayerController.GetLocalPlayerSteamID();
+
+                PunManager punManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView punManagerView = punManager.GetComponent<PhotonView>();
+
+                if (punManagerView != null)
+                {
+                    punManagerView.RPC("UpgradePlayerThrowStrengthRPC", RpcTarget.AllBuffered, steamID, newThrowStrength);
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+
+                OldthrowStrength = throwStrength;
             }
 
             GUILayout.Label("Speed: " + Mathf.RoundToInt(sliderValue), labelStyle);
-            sliderValue = GUILayout.HorizontalSlider(sliderValue, 1f, 10f, GUILayout.Width(200));
+            sliderValue = GUILayout.HorizontalSlider(sliderValue, 0f, 10f, GUILayout.Width(200));
             if (sliderValue != oldSliderValue)
             {
+                int newSpeed = Mathf.RoundToInt(sliderValue);
+                string steamID = PlayerController.GetLocalPlayerSteamID();
+
+                PunManager punManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView punManagerView = punManager.GetComponent<PhotonView>();
+
+                if (punManagerView != null)
+                {
+                    punManagerView.RPC("UpgradePlayerSprintSpeedRPC", RpcTarget.AllBuffered, steamID, newSpeed);
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+
                 oldSliderValue = sliderValue;
-                Debug.Log("Updated Speed to: " + sliderValue);
             }
 
             GUILayout.Label("Grab Range: " + Mathf.RoundToInt(grabRange), labelStyle);
-            grabRange = GUILayout.HorizontalSlider(grabRange, 1f, 20f, GUILayout.Width(200));
-            if (Hax2.grabRange != Hax2.OldgrabRange)
+            grabRange = GUILayout.HorizontalSlider(grabRange, 0f, 20f, GUILayout.Width(200));
+            if (grabRange != OldgrabRange)
             {
-                PlayerController.SetGrabRange(Hax2.grabRange);
-                OldgrabRange = Hax2.grabRange;
+                int newGrabRange = Mathf.RoundToInt(grabRange);
+                string steamID = PlayerController.GetLocalPlayerSteamID();
+
+                PunManager punManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView punManagerView = punManager.GetComponent<PhotonView>();
+
+                if (punManagerView != null)
+                {
+                    punManagerView.RPC("UpgradePlayerGrabRangeRPC", RpcTarget.AllBuffered, steamID, newGrabRange);
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+
+                OldgrabRange = grabRange;
             }
 
             GUILayout.Label("Stamina Recharge Delay: " + Mathf.RoundToInt(staminaRechargeDelay), labelStyle);
-            staminaRechargeDelay = GUILayout.HorizontalSlider(staminaRechargeDelay, 1f, 20f, GUILayout.Width(200));
+            staminaRechargeDelay = GUILayout.HorizontalSlider(staminaRechargeDelay, 0f, 20f, GUILayout.Width(200));
             if (staminaRechargeDelay != oldStaminaRechargeDelay)
             {
                 oldStaminaRechargeDelay = staminaRechargeDelay;
@@ -883,7 +944,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Stamina Recharge Rate: " + Mathf.RoundToInt(staminaRechargeRate), labelStyle);
-            staminaRechargeRate = GUILayout.HorizontalSlider(staminaRechargeRate, 1f, 20f, GUILayout.Width(200));
+            staminaRechargeRate = GUILayout.HorizontalSlider(staminaRechargeRate, 0f, 20f, GUILayout.Width(200));
             if (staminaRechargeDelay != oldStaminaRechargeDelay || staminaRechargeRate != oldStaminaRechargeRate)
             {
                 PlayerController.DecreaseStaminaRechargeDelay(staminaRechargeDelay, staminaRechargeRate);
@@ -893,15 +954,51 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Extra Jumps: " + Mathf.RoundToInt(extraJumps), labelStyle);
-            extraJumps = (int)GUILayout.HorizontalSlider(extraJumps, 1f, 20f, GUILayout.Width(200));
-            if (Hax2.extraJumps != Hax2.OldextraJumps)
+            extraJumps = (int)GUILayout.HorizontalSlider(extraJumps, 0f, 20f, GUILayout.Width(200));
+            if (extraJumps != OldextraJumps)
             {
-                PlayerController.SetExtraJumps(Hax2.extraJumps);
-                OldextraJumps = Hax2.extraJumps;
+                int newExtraJumps = Mathf.RoundToInt(extraJumps);
+                string steamID = PlayerController.GetLocalPlayerSteamID();
+
+                PunManager punManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView punManagerView = punManager.GetComponent<PhotonView>();
+
+                if (punManagerView != null)
+                {
+                    punManagerView.RPC("UpgradePlayerExtraJumpRPC", RpcTarget.AllBuffered, steamID, newExtraJumps);
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+
+                OldextraJumps = extraJumps;
+            }
+
+            GUILayout.Label("Tumble Launch: " + Mathf.RoundToInt(tumbleLaunch), labelStyle);
+            tumbleLaunch = (int)GUILayout.HorizontalSlider(tumbleLaunch, 0f, 20f, GUILayout.Width(200));
+            if (tumbleLaunch != OldtumbleLaunch)
+            {
+                int newExtraJumps = Mathf.RoundToInt(tumbleLaunch);
+                string steamID = PlayerController.GetLocalPlayerSteamID();
+
+                PunManager punManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView punManagerView = punManager.GetComponent<PhotonView>();
+
+                if (punManagerView != null)
+                {
+                    punManagerView.RPC("UpgradePlayerTumbleLaunchRPC", RpcTarget.AllBuffered, steamID, newExtraJumps);
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+
+                OldtumbleLaunch = tumbleLaunch;
             }
 
             GUILayout.Label("Jump Force: " + Mathf.RoundToInt(jumpForce), labelStyle);
-            jumpForce = GUILayout.HorizontalSlider(jumpForce, 1f, 20f, GUILayout.Width(200));
+            jumpForce = GUILayout.HorizontalSlider(jumpForce, 0f, 20f, GUILayout.Width(200));
             if (Hax2.jumpForce != Hax2.OldjumpForce)
             {
                 PlayerController.SetJumpForce(Hax2.jumpForce);
@@ -909,7 +1006,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Gravity: " + Mathf.RoundToInt(customGravity), labelStyle);
-            customGravity = GUILayout.HorizontalSlider(customGravity, 1f, 20f, GUILayout.Width(200));
+            customGravity = GUILayout.HorizontalSlider(customGravity, 0f, 20f, GUILayout.Width(200));
             if (Hax2.customGravity != Hax2.OldcustomGravity)
             {
                 PlayerController.SetCustomGravity(Hax2.customGravity);
@@ -941,7 +1038,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Flashlight Intensity: " + Mathf.RoundToInt(flashlightIntensity), labelStyle);
-            flashlightIntensity = GUILayout.HorizontalSlider(flashlightIntensity, 1f, 20f, GUILayout.Width(200));
+            flashlightIntensity = GUILayout.HorizontalSlider(flashlightIntensity, 0f, 20f, GUILayout.Width(200));
             if (Hax2.flashlightIntensity != OldflashlightIntensity)
             {
                 PlayerController.SetFlashlightIntensity(Hax2.flashlightIntensity);
@@ -975,6 +1072,7 @@ namespace dark_cheat
         void DrawVisualsTab()
         {
             GUILayout.Space(5);
+            ToggleLogic("modern_esp", " Use Modern ESP", ref useModernESP, null);
 
             // === Enemy ESP ===
             GUILayout.Label("Enemy ESP", sectionHeaderStyle);
@@ -1572,13 +1670,13 @@ namespace dark_cheat
             GUI.color = Color.white;
 
 
-            if (GUILayout.Button("[HOST] Teleport Item to Me", buttonStyle))
+            if (GUILayout.Button("Teleport Item to Me", buttonStyle))
             {
                 if (selectedItemIndex >= 0 && selectedItemIndex < sortedItems.Count)
                     ItemTeleport.TeleportItemToMe(sortedItems[selectedItemIndex]);
             }
 
-            if (GUILayout.Button("[HOST] Teleport All Items to Me", buttonStyle))
+            if (GUILayout.Button("Teleport All Items to Me", buttonStyle))
                 ItemTeleport.TeleportAllItemsToMe();
 
             GUILayout.Space(10);
@@ -1586,10 +1684,13 @@ namespace dark_cheat
             int displayValue = (int)Mathf.Pow(10, itemValueSliderPos);
             GUILayout.Label($"${displayValue:N0}", labelStyle);
             itemValueSliderPos = GUILayout.HorizontalSlider(itemValueSliderPos, 3f, 9f);
-            if (GUILayout.Button("[HOST] Apply Value Change", buttonStyle))
+            if (GUILayout.Button("Apply Value Change", buttonStyle))
             {
                 if (selectedItemIndex >= 0 && selectedItemIndex < sortedItems.Count)
-                    ItemTeleport.SetItemValue(sortedItems[selectedItemIndex], displayValue);
+                {
+                    var selectedItem = sortedItems[selectedItemIndex];
+                    ItemTeleport.SetItemValue(selectedItem, displayValue);
+                }
             }
 
             if (GUILayout.Button(showItemSpawner ? "Hide Item Spawner" : "Show Item Spawner", buttonStyle))

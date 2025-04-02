@@ -651,5 +651,42 @@ namespace dark_cheat
             }
             editor.SetFOV(fov);
         }
+
+        public static string GetLocalPlayerSteamID()
+        {
+            int localActorID = PhotonNetwork.LocalPlayer.ActorNumber;
+
+            var playerObjs = SemiFunc.PlayerGetList();
+            if (playerObjs == null)
+            {
+                Debug.LogWarning("Player list is null!");
+                return "";
+            }
+
+            foreach (var playerObj in playerObjs)
+            {
+                if (playerObj == null)
+                    continue;
+
+                try
+                {
+                    var photonViewField = playerObj.GetType().GetField("photonView", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    PhotonView view = photonViewField != null ? photonViewField.GetValue(playerObj) as PhotonView : null;
+                    if (view == null)
+                        continue;
+                    if (view.OwnerActorNr == localActorID)
+                    {
+                        var steamIdField = playerObj.GetType().GetField("steamID", BindingFlags.NonPublic | BindingFlags.Instance);
+                        string steamID = steamIdField != null ? steamIdField.GetValue(playerObj) as string : "";
+                        return steamID;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error retrieving SteamID from player object: {e.Message}");
+                }
+            }
+            return "";
+        }
     }
 }
