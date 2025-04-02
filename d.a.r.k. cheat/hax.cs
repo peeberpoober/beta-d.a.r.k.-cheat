@@ -169,6 +169,8 @@ namespace dark_cheat
         public static float OldthrowStrength = 1f;
         public static float OldslideDecay = 1f;
 
+        public static bool showingActionSelector = false;
+
         private List<ItemTeleport.GameItem> itemList = new List<ItemTeleport.GameItem>();
         private int selectedItemIndex = 0;
         private Vector2 itemScrollPosition = Vector2.zero;
@@ -339,12 +341,6 @@ namespace dark_cheat
                 DLog.Log("playerMaxHealth is not null");
             }
             else DLog.Log("playerMaxHealth null");
-
-            Assembly assembly = typeof(TextureLoader).Assembly;
-            foreach (string resName in assembly.GetManifestResourceNames())
-            {
-                Debug.Log("Embedded Resource Found: " + resName);
-            }
 
             toggleBgTexture = TextureLoader.LoadEmbeddedTexture("dark_cheat.images.toggle_bg.png");
             toggleKnobOffTexture = TextureLoader.LoadEmbeddedTexture("dark_cheat.images.toggle_knobOff.png");
@@ -626,6 +622,13 @@ namespace dark_cheat
                 {
                     chamsWindowRect = GUI.Window(10001, chamsWindowRect, DrawChamsColorWindow, "", backgroundStyle);
                 }
+            }
+
+            if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool ||
+            DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool ||
+            DebugCheats.drawChamsBool)
+            {
+                DebugCheats.DrawESP();
             }
 
             GUIStyle style = new GUIStyle(GUI.skin.label) { wordWrap = false };
