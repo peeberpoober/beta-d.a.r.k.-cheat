@@ -172,8 +172,6 @@ namespace dark_cheat
         public static float OldthrowStrength = 1f;
         public static float OldslideDecay = 1f;
 
-        public static bool showingActionSelector = false;
-
         private List<ItemTeleport.GameItem> itemList = new List<ItemTeleport.GameItem>();
         private int selectedItemIndex = 0;
         private Vector2 itemScrollPosition = Vector2.zero;
@@ -225,6 +223,11 @@ namespace dark_cheat
         public Texture2D toggleKnobOnTexture;
 
         public static bool useModernESP = false;
+
+        //Hotkey Window
+        private static bool showingActionSelector = false;
+        private static Rect featureSelectorRect = new Rect(200, 200, 400, 400);
+        private static Vector2 actionScroll;
 
         // === END OF NEW GUI ===
 
@@ -600,6 +603,11 @@ namespace dark_cheat
                 if (showChamsWindow)
                 {
                     chamsWindowRect = GUI.Window(10001, chamsWindowRect, DrawChamsColorWindow, "", backgroundStyle);
+                }
+                if (showingActionSelector)
+                {
+                    GUI.Box(featureSelectorRect, "", boxStyle);
+                    featureSelectorRect = GUI.Window(9999, featureSelectorRect, DrawFeatureSelectionWindow, "", boxStyle);
                 }
             }
 
@@ -1217,7 +1225,7 @@ namespace dark_cheat
 
             GUILayout.Space(40);
 
-            if (GUILayout.Button("-2 Damage", buttonStyle))
+            if (GUILayout.Button("-1 Damage", buttonStyle))
             {
                 if (selectedPlayerIndex >= 0 && selectedPlayerIndex < playerList.Count)
                 {
@@ -1790,7 +1798,6 @@ namespace dark_cheat
                 GUILayout.Label(hotkeyManager.KeyAssignmentError, errorStyle, GUILayout.Height(25));
             }
 
-
             GUILayout.Label("Hotkey Configuration", sectionHeaderStyle);
             GUILayout.Space(5);
 
@@ -1841,11 +1848,12 @@ namespace dark_cheat
                 {
                     hotkeyManager.ClearHotkeyBinding(i);
                 }
+
                 GUILayout.EndHorizontal();
             }
 
             GUILayout.Space(10);
-            if (GUILayout.Button("Save Hotkey Settings", buttonStyle, GUILayout.Width(450)))
+            if (GUILayout.Button("Save Hotkey Settings", buttonStyle))
             {
                 hotkeyManager.SaveHotkeySettings();
                 Debug.Log("Hotkey settings saved manually");
@@ -1924,6 +1932,34 @@ namespace dark_cheat
                 configstatus = "Config Loaded";
             }
             GUILayout.EndHorizontal();
+        }
+
+        void DrawFeatureSelectionWindow(int id)
+        {
+            GUILayout.Label("Select a feature to bind", sectionHeaderStyle);
+
+            actionScroll = GUILayout.BeginScrollView(actionScroll, false, true, GUILayout.Width(380), GUILayout.Height(320));
+
+            List<HotkeyManager.HotkeyAction> actions = HotkeyManager.Instance.GetAvailableActions();
+            for (int i = 0; i < actions.Count; i++)
+            {
+                var action = actions[i];
+                if (GUILayout.Button(action.Name, buttonStyle))
+                {
+                    HotkeyManager.Instance.AssignActionToHotkey(i);
+                    showingActionSelector = false;
+                }
+            }
+            GUILayout.EndScrollView();
+
+            GUILayout.Space(5);
+
+            if (GUILayout.Button("Cancel", buttonStyle))
+            {
+                showingActionSelector = false;
+            }
+
+            GUI.DragWindow(new Rect(0, 0, 10000, 30));
         }
 
         void DrawHotkeyField(string label, KeyCode key, Action configureCallback, int index)
