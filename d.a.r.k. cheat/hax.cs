@@ -1051,7 +1051,7 @@ namespace dark_cheat
             tumbleLaunch = (int)GUILayout.HorizontalSlider(tumbleLaunch, 0f, 20f, GUILayout.Width(200));
             if (tumbleLaunch != OldtumbleLaunch)
             {
-                int newExtraJumps = Mathf.RoundToInt(tumbleLaunch);
+                int newtumbleLaunch = Mathf.RoundToInt(tumbleLaunch);
                 string steamID = PlayerController.GetLocalPlayerSteamID();
 
                 PunManager punManager = GameObject.FindObjectOfType<PunManager>();
@@ -1059,7 +1059,7 @@ namespace dark_cheat
 
                 if (punManagerView != null)
                 {
-                    punManagerView.RPC("UpgradePlayerTumbleLaunchRPC", RpcTarget.AllBuffered, steamID, newExtraJumps);
+                    punManagerView.RPC("UpgradePlayerTumbleLaunchRPC", RpcTarget.AllBuffered, steamID, newtumbleLaunch);
                 }
                 else
                 {

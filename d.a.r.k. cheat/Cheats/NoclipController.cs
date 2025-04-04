@@ -4,269 +4,269 @@ using UnityEngine.InputSystem;
 using System.Reflection;
 using System.Collections;
 
-namespace dark_cheat
+public static class NoclipController
 {
-    public static class NoclipController
+    public static bool noclipActive = false;
+
+    private static float previousGravityValue;
+    private static object playerControllerInstance;
+    private static System.Type playerControllerType = System.Type.GetType("PlayerController, Assembly-CSharp");
+
+    private static InputAction jumpAction;
+    private static InputAction crouchAction;
+    private static InputAction sprintAction;
+
+    private static FieldInfo rbField;
+    private static FieldInfo customGravityField;
+    private static MethodInfo antiGravityMethod;
+
+    private static void InitializePlayerController()
     {
-        public static bool noclipActive = false;
-
-        private static float previousGravityValue;
-        private static object playerControllerInstance;
-        private static System.Type playerControllerType = System.Type.GetType("PlayerController, Assembly-CSharp");
-
-        private static InputAction jumpAction;
-        private static InputAction crouchAction;
-        private static InputAction sprintAction;
-
-        private static FieldInfo rbField;
-        private static FieldInfo customGravityField;
-        private static MethodInfo antiGravityMethod;
-
-        private static void InitializePlayerController()
+        if (playerControllerType == null)
         {
-            DLog.Log("[Noclip] Initializing PlayerController...");
+            Debug.LogError("PlayerController type not found.");
+            return;
+        }
 
-            if (playerControllerType == null)
-            {
-                DLog.LogWarning("[Noclip] PlayerController type is null, trying to refresh...");
-                playerControllerType = Type.GetType("PlayerController, Assembly-CSharp");
-                if (playerControllerType == null)
-                {
-                    DLog.LogError("[Noclip] ERROR: PlayerController type STILL NULL!");
-                    return;
-                }
-            }
-
+        if (playerControllerInstance == null)
+        {
             playerControllerInstance = GameObject.FindObjectOfType(playerControllerType);
             if (playerControllerInstance == null)
             {
-                DLog.LogError("[Noclip] ERROR: PlayerController instance not found in current scene.");
+                Debug.LogError("PlayerController instance not found in current scene.");
                 return;
             }
-
-            DLog.Log("[Noclip] PlayerController instance found!");
-
-            // Store the field links
+            // store the field links
             rbField = playerControllerType.GetField("rb", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             customGravityField = playerControllerType.GetField("CustomGravity", BindingFlags.Public | BindingFlags.Instance);
             antiGravityMethod = playerControllerType.GetMethod("AntiGravity", BindingFlags.Public | BindingFlags.Instance);
+        }
+    }
 
-            DLog.Log("[Noclip] PlayerController fields linked successfully.");
+    private static void InitializeInputActions()
+    {
+        // Get input actions to see what keybinds user has
+        if (jumpAction != null && crouchAction != null && sprintAction != null)
+            return;
+
+        Type inputManagerType = typeof(InputManager);
+        if (inputManagerType == null)
+        {
+            Debug.LogError("InputManager type not found.");
+            return;
         }
 
-        private static void InitializeInputActions()
+        FieldInfo instanceField = inputManagerType.GetField("instance", BindingFlags.Public | BindingFlags.Static);
+        if (instanceField == null)
         {
-            // Get input actions to see what keybinds user has
-            if (jumpAction != null && crouchAction != null && sprintAction != null)
-                return;
+            Debug.LogError("InputManager.instance field not found.");
+            return;
+        }
 
-            Type inputManagerType = typeof(InputManager);
-            if (inputManagerType == null)
-            {
-                DLog.LogError("InputManager type not found.");
-                return;
-            }
+        object inputManagerInstance = instanceField.GetValue(null);
+        if (inputManagerInstance == null)
+        {
+            Debug.LogError("InputManager instance is null.");
+            return;
+        }
 
-            FieldInfo instanceField = inputManagerType.GetField("instance", BindingFlags.Public | BindingFlags.Static);
-            if (instanceField == null)
-            {
-                DLog.LogError("InputManager.instance field not found.");
-                return;
-            }
+        FieldInfo inputActionsField = inputManagerType.GetField("inputActions", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        if (inputActionsField == null)
+        {
+            Debug.LogError("Field 'inputActions' not found in InputManager.");
+            return;
+        }
 
-            object inputManagerInstance = instanceField.GetValue(null);
-            if (inputManagerInstance == null)
-            {
-                DLog.LogError("InputManager instance is null.");
-                return;
-            }
+        object inputActionsValue = inputActionsField.GetValue(inputManagerInstance);
+        if (inputActionsValue == null)
+        {
+            Debug.LogError("InputManager.inputActions is null.");
+            return;
+        }
 
-            FieldInfo inputActionsField = inputManagerType.GetField("inputActions", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (inputActionsField == null)
-            {
-                DLog.LogError("Field 'inputActions' not found in InputManager.");
-                return;
-            }
+        IDictionary actionsDict = inputActionsValue as IDictionary;
+        if (actionsDict == null)
+        {
+            Debug.LogError("InputManager.inputActions is not a dictionary.");
+            return;
+        }
 
-            object inputActionsValue = inputActionsField.GetValue(inputManagerInstance);
-            if (inputActionsValue == null)
+        foreach (DictionaryEntry entry in actionsDict)
+        {
+            if (entry.Value is InputAction action)
             {
-                DLog.LogError("InputManager.inputActions is null.");
-                return;
-            }
-
-            IDictionary actionsDict = inputActionsValue as IDictionary;
-            if (actionsDict == null)
-            {
-                DLog.LogError("InputManager.inputActions is not a dictionary.");
-                return;
-            }
-
-            foreach (DictionaryEntry entry in actionsDict)
-            {
-                if (entry.Value is InputAction action)
+                if (action.name == "Jump")
                 {
-                    if (action.name == "Jump")
-                    {
-                        DLog.Log("Found Jump action: " + action);
-                        jumpAction = action;
-                    }
-                    else if (action.name == "Crouch")
-                    {
-                        DLog.Log("Found Crouch action: " + action);
-                        crouchAction = action;
-                    }
-                    else if (action.name == "Sprint")
-                    {
-                        DLog.Log("Found Sprint action: " + action);
-                        sprintAction = action;
-                    }
+                    Debug.Log("Found Jump action: " + action);
+                    jumpAction = action;
+                }
+                else if (action.name == "Crouch")
+                {
+                    Debug.Log("Found Crouch action: " + action);
+                    crouchAction = action;
+                }
+                else if (action.name == "Sprint")
+                {
+                    Debug.Log("Found Sprint action: " + action);
+                    sprintAction = action;
                 }
             }
         }
+    }
 
-        public static void ToggleNoclip()
+    public static void ToggleNoclip()
+    {
+        InitializePlayerController();
+        if (playerControllerInstance == null) return;
+
+        if (rbField != null)
         {
-            InitializePlayerController();
-            if (playerControllerInstance == null)
+            Rigidbody rb = rbField.GetValue(playerControllerInstance) as Rigidbody;
+            if (rb != null)
             {
+                rb.useGravity = !noclipActive;
+                rb.isKinematic = noclipActive;
+
+                if (noclipActive)
+                {
+                    if (antiGravityMethod != null)
+                    {
+                        antiGravityMethod.Invoke(playerControllerInstance, new object[] { 100000000f });
+                    }
+                    else
+                    {
+                        Debug.Log("Method AntiGravity not found in PlayerController.");
+                    }
+                    rb.velocity = Vector3.zero;
+                }
+                else
+                {
+                    if (antiGravityMethod != null)
+                    {
+                        antiGravityMethod.Invoke(playerControllerInstance, new object[] { 0 });
+                    }
+                    else
+                    {
+                        Debug.Log("Method AntiGravity not found in PlayerController.");
+                    }
+                }
+                foreach (var collider in ((MonoBehaviour)playerControllerInstance).GetComponentsInChildren<Collider>())
+                {
+                    collider.isTrigger = noclipActive;
+                }
+                Debug.Log($"Player noclip {(!noclipActive ? "disabled" : "enabled")}.");
+            }
+            else
+            {
+                Debug.Log("Rigidbody not found in PlayerController.");
+            }
+        }
+        else
+        {
+            Debug.Log("rb field not found in PlayerController.");
+        }
+
+        if (customGravityField != null)
+        {
+            if (noclipActive)
+            {
+                previousGravityValue = (float)customGravityField.GetValue(playerControllerInstance);
+                customGravityField.SetValue(playerControllerInstance, 0f);
+            }
+            else
+            {
+                float restoreGravity = previousGravityValue > 0 ? previousGravityValue : 30f;
+                customGravityField.SetValue(playerControllerInstance, restoreGravity);
+            }
+        }
+        else
+        {
+            Debug.Log("CustomGravity field not found in PlayerController.");
+        }
+    }
+
+    public static void UpdateMovement()
+    {
+        try
+        {
+            if (!noclipActive || playerControllerInstance == null)
+            {
+                if (playerControllerInstance == null)
+                {
+                    Debug.Log("PlayerControllerInstance = null");
+                    return;
+                }
+                Debug.Log("noclipActive is false");
+                return;
+            }
+
+
+            if (jumpAction == null || crouchAction == null || sprintAction == null)
+            {
+                Debug.Log("Jump|Crouch|Sprint is null, initializing Input Actions.");
+                InitializeInputActions();
+            }
+
+
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                Debug.LogError("Camera.main is null!");
                 noclipActive = false;
                 return;
             }
 
-            noclipActive = !noclipActive;
-            if (rbField != null)
+            Vector3 movement = Vector3.zero;
+            Transform cameraTransform = cam.transform;
+            Transform playerTransform = ((MonoBehaviour)playerControllerInstance).transform;
+            if (playerTransform == null)
             {
-                Rigidbody rb = rbField.GetValue(playerControllerInstance) as Rigidbody;
-                if (rb != null)
-                {
-                    rb.useGravity = !noclipActive;
-                    rb.isKinematic = noclipActive;
+                Debug.LogError("Player transform is null!");
+                noclipActive = false;
+                return;
+            }
 
-                    if (noclipActive)
+            Debug.Log("Before Input Keys.");
+            if (Input.GetKey(KeyCode.W)) movement += cameraTransform.forward;
+            if (Input.GetKey(KeyCode.S)) movement -= cameraTransform.forward;
+            if (Input.GetKey(KeyCode.A)) movement -= cameraTransform.right;
+            if (Input.GetKey(KeyCode.D)) movement += cameraTransform.right;
+            Debug.Log("After Input keys.");
+
+            Debug.Log("Before Jump|Crouch.");
+            if (jumpAction != null && jumpAction.IsPressed()) movement += Vector3.up;
+            if (crouchAction != null && crouchAction.IsPressed()) movement -= Vector3.up;
+            Debug.Log("After Jump|Crouch");
+            float speed = (sprintAction != null && sprintAction.IsPressed()) ? 20.0f : 10.0f;
+            movement = movement.normalized * speed * Time.deltaTime;
+            playerTransform.position += movement;
+
+            Debug.Log("After Player Transform.");
+
+            // remove inertia if not sprinting
+            if (sprintAction != null && !sprintAction.IsPressed())
+            {
+                if (rbField != null)
+                {
+                    Rigidbody rb = rbField.GetValue(playerControllerInstance) as Rigidbody;
+                    if (rb != null)
                     {
-                        if (antiGravityMethod != null)
-                        {
-                            antiGravityMethod.Invoke(playerControllerInstance, new object[] { 100000000f });
-                        }
-                        else
-                        {
-                            DLog.Log("Method AntiGravity not found in PlayerController.");
-                        }
                         rb.velocity = Vector3.zero;
                     }
                     else
                     {
-                        if (antiGravityMethod != null)
-                        {
-                            antiGravityMethod.Invoke(playerControllerInstance, new object[] { 0 });
-                        }
-                        else
-                        {
-                            DLog.Log("Method AntiGravity not found in PlayerController.");
-                        }
+                        Debug.LogError("Rigidbody (rb) is null!");
+                        noclipActive = false;
+                        return;
                     }
-                    foreach (var collider in ((MonoBehaviour)playerControllerInstance).GetComponentsInChildren<Collider>())
-                    {
-                        collider.isTrigger = noclipActive;
-                    }
-                    DLog.Log($"Player noclip {(!noclipActive ? "disabled" : "enabled")}.");
                 }
-                else
-                {
-                    DLog.Log("Rigidbody not found in PlayerController.");
-                }
-            }
-            else
-            {
-                DLog.Log("rb field not found in PlayerController.");
-            }
-
-            if (customGravityField != null)
-            {
-                if (noclipActive)
-                {
-                    previousGravityValue = (float)customGravityField.GetValue(playerControllerInstance);
-                    customGravityField.SetValue(playerControllerInstance, 0f);
-                }
-                else
-                {
-                    float restoreGravity = previousGravityValue > 0 ? previousGravityValue : 30f;
-                    customGravityField.SetValue(playerControllerInstance, restoreGravity);
-                }
-            }
-            else
-            {
-                DLog.Log("CustomGravity field not found in PlayerController.");
             }
         }
-
-        public static void UpdateMovement()
+        catch (System.Exception ex)
         {
-            try
-            {
-                if (!noclipActive || playerControllerInstance == null)
-                    return;
-
-                if (jumpAction == null || crouchAction == null || sprintAction == null)
-                    InitializeInputActions();
-
-                Camera cam = Camera.main;
-                if (cam == null)
-                {
-                    DLog.LogError("Camera.main is null!");
-                    noclipActive = false;
-                    return;
-                }
-
-                Vector3 movement = Vector3.zero;
-                Transform cameraTransform = cam.transform;
-                Transform playerTransform = ((MonoBehaviour)playerControllerInstance).transform;
-                if (playerTransform == null)
-                {
-                    DLog.LogError("Player transform is null!");
-                    noclipActive = false;
-                    return;
-                }
-
-                // everyone use wasd, i think
-                if (Input.GetKey(KeyCode.W)) movement += cameraTransform.forward;
-                if (Input.GetKey(KeyCode.S)) movement -= cameraTransform.forward;
-                if (Input.GetKey(KeyCode.A)) movement -= cameraTransform.right;
-                if (Input.GetKey(KeyCode.D)) movement += cameraTransform.right;
-
-                if (jumpAction != null && jumpAction.IsPressed()) movement += Vector3.up;
-                if (crouchAction != null && crouchAction.IsPressed()) movement -= Vector3.up;
-
-                float speed = (sprintAction != null && sprintAction.IsPressed()) ? 20.0f : 10.0f;
-                movement = movement.normalized * speed * Time.deltaTime;
-                playerTransform.position += movement;
-
-                // remove inertia if not sprinting
-                if (sprintAction != null && !sprintAction.IsPressed())
-                {
-                    if (rbField != null)
-                    {
-                        Rigidbody rb = rbField.GetValue(playerControllerInstance) as Rigidbody;
-                        if (rb != null)
-                        {
-                            rb.velocity = Vector3.zero;
-                        }
-                        else
-                        {
-                            DLog.LogError("Rigidbody (rb) is null!");
-                            noclipActive = false;
-                            return;
-                        }
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                DLog.LogError("Error in NoclipController.UpdateMovement: " + ex.Message);
-                noclipActive = false;
-                return;
-            }
+            Debug.LogError("Error in NoclipController.UpdateMovement: " + ex.Message);
+            noclipActive = false;
+            return;
         }
     }
 }
