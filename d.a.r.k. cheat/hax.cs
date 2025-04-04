@@ -13,6 +13,8 @@ using static UnityEngine.Rendering.DebugUI.Table;
 using Sirenix.OdinInspector;
 using static Photon.Pun.UtilityScripts.TabViewManager;
 using System.IO;
+using Steamworks;
+using Steamworks.Data;
 
 namespace dark_cheat
 {
@@ -105,7 +107,7 @@ namespace dark_cheat
 
         private GUIStyle menuStyle;
         private bool initialized = false;
-        private static Dictionary<Color, Texture2D> solidTextures = new Dictionary<Color, Texture2D>();
+        private static Dictionary<UnityEngine.Color, Texture2D> solidTextures = new Dictionary<UnityEngine.Color, Texture2D>();
 
         private bool showColorPicker = false;
         private int selectedColorOption = 0; // 0: Enemy Visible, 1: Enemy Hidden, 2: Item Visible, 3: Item Hidden
@@ -194,7 +196,7 @@ namespace dark_cheat
 
         private Rect menuRect = new Rect(100, 100, 640, 500);
         private Vector2 scrollPos;
-        private string[] tabs = new string[] { "SELF", "VISUALS", "COMBAT", "MISC", "ENEMIES", "ITEMS", "HOTKEYS", "TROLLING", "CONFIG" };
+        private string[] tabs = new string[] { "SELF", "VISUALS", "COMBAT", "MISC", "ENEMIES", "ITEMS", "HOTKEYS", "TROLLING", "CONFIG", "SERVERS" };
         private int currentTab = 0;
         public static Texture2D toggleBackground;
         public string configstatus = "Waiting For Action...";
@@ -228,6 +230,35 @@ namespace dark_cheat
         private static bool showingActionSelector = false;
         private static Rect featureSelectorRect = new Rect(200, 200, 400, 400);
         private static Vector2 actionScroll;
+
+        //Server Browser
+        private bool hideFullLobbies = false;
+        private Vector2 memberWindowScroll;
+        private bool showMemberWindow = false;
+        private static Rect lobbyMemberWindowRect = new Rect(100, 100, 320, 240);
+        private static SteamId selectedLobbyId = 0;
+        public static Dictionary<SteamId, string> LobbyHostCache = new Dictionary<SteamId, string>();
+        public static Dictionary<SteamId, List<string>> LobbyMemberCache = new Dictionary<SteamId, List<string>>();
+        private string lobbySearchTerm = "";
+        private enum SortMode { None, RegionAZ, RegionZA, MostPlayers, LeastPlayers }
+        private SortMode sortMode = SortMode.None;
+        private static Vector2 serverListScroll;
+        private enum SortOption { None, RegionAsc, RegionDesc, MostPlayers, LeastPlayers }
+        public class LobbyCoroutineHost : MonoBehaviour { }
+        public static LobbyCoroutineHost CoroutineHost;
+        private Rect previousWindowRect;
+        private bool hasStoredPreviousSize = false;
+        private bool wasInServerTab = false;
+        private static Texture2D rowBgNormal;
+        private static Texture2D rowBgHover;
+        private static Texture2D rowBgSelected;
+
+        //TextEditor
+        private bool showTextEditorPopup = false;
+        private string largeTextBoxContent = "";
+        private Rect editorPopupRect = new Rect(200, 200, 400, 300);
+        private string activeTextFieldId = null;
+        private static Vector2 textboxscroll;
 
         // === END OF NEW GUI ===
 
@@ -303,7 +334,6 @@ namespace dark_cheat
             DLog.Log($"Level update -> Player list: {playerNames.Count} players, Enemy list: {enemyNames.Count} enemies");
         }
 
-
         public void Start()
         {
             hotkeyManager = HotkeyManager.Instance;
@@ -318,7 +348,7 @@ namespace dark_cheat
             }
 
             DebugCheats.texture2 = new Texture2D(2, 2, TextureFormat.ARGB32, false);
-            DebugCheats.texture2.SetPixels(new[] { Color.red, Color.red, Color.red, Color.red });
+            DebugCheats.texture2.SetPixels(new[] { UnityEngine.Color.red, UnityEngine.Color.red, UnityEngine.Color.red, UnityEngine.Color.red });
             DebugCheats.texture2.Apply();
 
             var playerHealthType = Type.GetType("PlayerHealth, Assembly-CSharp");
@@ -343,6 +373,10 @@ namespace dark_cheat
             toggleKnobOnTexture = TextureLoader.LoadEmbeddedTexture("dark_cheat.images.toggle_knobOn.png");
 
             ConfigManager.LoadAllToggles();
+
+            GameObject LCH = new GameObject("LobbyCoroutineHost");
+            UnityEngine.Object.DontDestroyOnLoad(LCH);
+            Hax2.CoroutineHost = LCH.AddComponent<LobbyCoroutineHost>();
         }
 
         public void Update()
@@ -609,6 +643,14 @@ namespace dark_cheat
                     GUI.Box(featureSelectorRect, "", boxStyle);
                     featureSelectorRect = GUI.Window(9999, featureSelectorRect, DrawFeatureSelectionWindow, "", boxStyle);
                 }
+                if (showMemberWindow && selectedLobbyId != 0)
+                {
+                    lobbyMemberWindowRect = GUI.Window(1299, lobbyMemberWindowRect, DrawLobbyMemberWindow, GUIContent.none, backgroundStyle);
+                }
+                if (showTextEditorPopup)
+                {
+                    editorPopupRect = GUI.Window(9989, editorPopupRect, DrawTextEditorPopup, "", backgroundStyle);
+                }
             }
 
             if (useModernESP)
@@ -644,7 +686,7 @@ namespace dark_cheat
             GUIStyle boldStyle = new GUIStyle(GUI.skin.label);
             boldStyle.fontSize = 16;
             boldStyle.fontStyle = FontStyle.Bold;
-            boldStyle.normal.textColor = Color.white;
+            boldStyle.normal.textColor = UnityEngine.Color.white;
             float startX2 = 20f;
             float startYX2 = 250f;
             float lineHeightX2 = 24f;
@@ -679,7 +721,7 @@ namespace dark_cheat
 
 
 
-                GUI.color = Color.green;
+                GUI.color = UnityEngine.Color.green;
                 GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), "Alive Players:", boldStyle);
                 foreach (var name in alivePlayers)
                 {
@@ -689,7 +731,7 @@ namespace dark_cheat
 
                 lineX2++; // Adds space
 
-                GUI.color = Color.red;
+                GUI.color = UnityEngine.Color.red;
                 GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), "Dead Players:", boldStyle);
                 foreach (var name in deadPlayers)
                 {
@@ -697,7 +739,7 @@ namespace dark_cheat
                     GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), displayName);
                 }
 
-                GUI.color = Color.white;
+                GUI.color = UnityEngine.Color.white;
             }
 
             lineX2++;
@@ -706,9 +748,9 @@ namespace dark_cheat
 
             if (DebugCheats.drawItemEspBool && showTotalValue)
             {
-                GUI.color = Color.yellow;
+                GUI.color = UnityEngine.Color.yellow;
                 GUI.Label(new Rect(startX2, startYX2 + (lineX2++ * lineHeightX2), 400f, lineHeightX2), $"Total Value on Map: ${totalValuableValue}", boldStyle);
-                GUI.color = Color.white;
+                GUI.color = UnityEngine.Color.white;
                 lineX2++;
             }
 
@@ -774,6 +816,27 @@ namespace dark_cheat
 
         void DrawMenuWindow(int windowID)
         {
+            // === Server Browser Tab Resize Logic ===
+            if (currentTab == 9 && !wasInServerTab)
+            {
+                if (!hasStoredPreviousSize)
+                {
+                    previousWindowRect = menuRect;
+                    hasStoredPreviousSize = true;
+                }
+
+                menuRect.width = 1200f;
+                menuRect.height = 765f;
+                wasInServerTab = true;
+            }
+            else if (currentTab != 9 && wasInServerTab)
+            {
+                // Revert to previous layout
+                if (hasStoredPreviousSize)
+                    menuRect = previousWindowRect;
+
+                wasInServerTab = false;
+            }
             GUI.DragWindow(new Rect(0, 0, menuRect.width, 25));
 
             float tabPanelWidth = 120f;
@@ -813,6 +876,7 @@ namespace dark_cheat
                 case 6: DrawHotkeysTab(); break;
                 case 7: DrawTrollingTab(); break;
                 case 8: DrawConfigTab(); break;
+                case 9: DrawServersTab(); break;
             }
 
             GUILayout.EndScrollView();
@@ -1206,15 +1270,15 @@ namespace dark_cheat
                 // Set background & text color based on selection
                 if (i == selectedPlayerIndex)
                 {
-                    playerButtonStyle.normal.background = MakeSolidBackground(new Color32(50, 50, 70, 255)); // Highlight
+                    playerButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(50, 50, 70, 255)); // Highlight
                     playerButtonStyle.normal.textColor = new Color32(255, 165, 0, 255);
                 }
                 else
                 {
-                    playerButtonStyle.normal.background = MakeSolidBackground(new Color32(30, 30, 30, 255)); // Default
-                    playerButtonStyle.normal.textColor = new Color(0.8f, 0.8f, 0.8f);
-                    playerButtonStyle.hover.background = MakeSolidBackground(new Color32(40, 40, 50, 255)); // On hover
-                    playerButtonStyle.hover.textColor = Color.white;
+                    playerButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(30, 30, 30, 255)); // Default
+                    playerButtonStyle.normal.textColor = new UnityEngine.Color(0.8f, 0.8f, 0.8f);
+                    playerButtonStyle.hover.background = MakeSolidBackground(new UnityEngine.Color32(40, 40, 50, 255)); // On hover
+                    playerButtonStyle.hover.textColor = UnityEngine.Color.white;
                 }
 
                 if (GUILayout.Button(playerNames[i], playerButtonStyle))
@@ -1303,15 +1367,15 @@ namespace dark_cheat
                 // Set background & text color based on selection
                 if (i == selectedPlayerIndex)
                 {
-                    playerButtonStyle.normal.background = MakeSolidBackground(new Color32(50, 50, 70, 255)); // Highlight
+                    playerButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(50, 50, 70, 255)); // Highlight
                     playerButtonStyle.normal.textColor = new Color32(255, 165, 0, 255);
                 }
                 else
                 {
-                    playerButtonStyle.normal.background = MakeSolidBackground(new Color32(30, 30, 30, 255)); // Default
-                    playerButtonStyle.normal.textColor = new Color(0.8f, 0.8f, 0.8f);
-                    playerButtonStyle.hover.background = MakeSolidBackground(new Color32(40, 40, 50, 255)); // On hover
-                    playerButtonStyle.hover.textColor = Color.white;
+                    playerButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(30, 30, 30, 255)); // Default
+                    playerButtonStyle.normal.textColor = new UnityEngine.Color(0.8f, 0.8f, 0.8f);
+                    playerButtonStyle.hover.background = MakeSolidBackground(new UnityEngine.Color32(40, 40, 50, 255)); // On hover
+                    playerButtonStyle.hover.textColor = UnityEngine.Color.white;
                 }
 
                 if (GUILayout.Button(playerNames[i], playerButtonStyle))
@@ -1369,7 +1433,18 @@ namespace dark_cheat
 
             if (GUILayout.Button(spoofTargetVisibleName, buttonStyle)) spoofDropdownVisible = !spoofDropdownVisible;
 
+            string fieldId = "SpoofNameField";
+
+            GUI.SetNextControlName(fieldId);
             spoofedNameText = GUILayout.TextField(spoofedNameText, textFieldStyle, GUILayout.Width(110));
+
+            if (GUI.GetNameOfFocusedControl() == fieldId && !showTextEditorPopup)
+            {
+                activeTextFieldId = fieldId;
+                largeTextBoxContent = spoofedNameText;
+                showTextEditorPopup = true;
+                GUI.FocusControl(null);
+            }
 
             GUILayout.EndHorizontal();
 
@@ -1400,7 +1475,16 @@ namespace dark_cheat
             ToggleLogic("persistent_spoof_name", " Persistent Spoof Name", ref spoofNameActive, null);
             if (spoofNameActive)
             {
+                fieldId = "PersistentSpoofNameField";
+                GUI.SetNextControlName(fieldId);
                 persistentNameText = GUILayout.TextField(persistentNameText, textFieldStyle, GUILayout.Width(210));
+                if (GUI.GetNameOfFocusedControl() == fieldId && !showTextEditorPopup)
+                {
+                    activeTextFieldId = fieldId;
+                    largeTextBoxContent = persistentNameText;
+                    showTextEditorPopup = true;
+                    GUI.FocusControl(null); // prevent retrigger
+                }
             }
 
             GUILayout.Space(10);
@@ -1465,7 +1549,16 @@ namespace dark_cheat
 
             if (GUILayout.Button(ChatDropdownVisibleName, buttonStyle)) ChatDropdownVisible = !ChatDropdownVisible;
 
+            fieldId = "chatmessageField";
+            GUI.SetNextControlName(fieldId);
             chatMessageText = GUILayout.TextField(chatMessageText, textFieldStyle, GUILayout.Width(110));
+            if (GUI.GetNameOfFocusedControl() == fieldId && !showTextEditorPopup)
+            {
+                activeTextFieldId = fieldId;
+                largeTextBoxContent = chatMessageText;
+                showTextEditorPopup = true;
+                GUI.FocusControl(null); // prevent retrigger
+            }
             GUILayout.EndHorizontal();
 
             if (ChatDropdownVisible)
@@ -1541,13 +1634,13 @@ namespace dark_cheat
                     // Backgrounds
                     if (i == selectedEnemyIndex)
                     {
-                        enemyButtonStyle.normal.background = MakeSolidBackground(new Color32(60, 30, 10, 200)); // Deep orange highlight
-                        enemyButtonStyle.normal.textColor = new Color(1f, 0.55f, 0.1f); // Orange text
+                        enemyButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(60, 30, 10, 200)); // Deep orange highlight
+                        enemyButtonStyle.normal.textColor = new UnityEngine.Color(1f, 0.55f, 0.1f); // Orange text
                     }
                     else
                     {
-                        enemyButtonStyle.normal.background = MakeSolidBackground(new Color32(30, 30, 35, 180));
-                        enemyButtonStyle.normal.textColor = new Color(0.8f, 0.8f, 0.8f);
+                        enemyButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(30, 30, 35, 180));
+                        enemyButtonStyle.normal.textColor = new UnityEngine.Color(0.8f, 0.8f, 0.8f);
                     }
 
                     if (GUILayout.Button(enemyNames[i], enemyButtonStyle, GUILayout.Height(30)))
@@ -1555,7 +1648,7 @@ namespace dark_cheat
                 }
 
                 GUILayout.EndScrollView();
-                GUI.color = Color.white;
+                GUI.color = UnityEngine.Color.white;
 
                 GUILayout.Space(40);
                 GUILayout.BeginHorizontal();
@@ -1661,13 +1754,13 @@ namespace dark_cheat
 
                 if (i == selectedItemIndex)
                 {
-                    itemButtonStyle.normal.background = MakeSolidBackground(new Color32(45, 25, 5, 220));
-                    itemButtonStyle.normal.textColor = new Color(1f, 0.55f, 0.1f);
+                    itemButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(45, 25, 5, 220));
+                    itemButtonStyle.normal.textColor = new UnityEngine.Color(1f, 0.55f, 0.1f);
                 }
                 else
                 {
-                    itemButtonStyle.normal.background = MakeSolidBackground(new Color32(28, 28, 30, 180));
-                    itemButtonStyle.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
+                    itemButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(28, 28, 30, 180));
+                    itemButtonStyle.normal.textColor = new UnityEngine.Color(0.85f, 0.85f, 0.85f);
                 }
 
                 string itemLabel = $"{sortedItems[i].Name}   [Value: ${sortedItems[i].Value}]";
@@ -1675,7 +1768,7 @@ namespace dark_cheat
                     selectedItemIndex = i;
             }
             GUILayout.EndScrollView();
-            GUI.color = Color.white;
+            GUI.color = UnityEngine.Color.white;
 
 
             if (GUILayout.Button("Teleport Item to Me", buttonStyle))
@@ -1733,13 +1826,13 @@ namespace dark_cheat
 
                     if (i == selectedItemToSpawnIndex)
                     {
-                        itemSpawnButtonStyle.normal.background = MakeSolidBackground(new Color32(45, 25, 5, 220));
-                        itemSpawnButtonStyle.normal.textColor = new Color(1f, 0.55f, 0.1f);
+                        itemSpawnButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(45, 25, 5, 220));
+                        itemSpawnButtonStyle.normal.textColor = new UnityEngine.Color(1f, 0.55f, 0.1f);
                     }
                     else
                     {
-                        itemSpawnButtonStyle.normal.background = MakeSolidBackground(new Color32(28, 28, 30, 180));
-                        itemSpawnButtonStyle.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
+                        itemSpawnButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(28, 28, 30, 180));
+                        itemSpawnButtonStyle.normal.textColor = new UnityEngine.Color(0.85f, 0.85f, 0.85f);
                     }
 
                     if (GUILayout.Button(filteredItems[i], itemSpawnButtonStyle, GUILayout.Height(30)))
@@ -1792,7 +1885,7 @@ namespace dark_cheat
                 {
                     fontSize = 14,
                     fontStyle = FontStyle.Bold,
-                    normal = { textColor = Color.red },
+                    normal = { textColor = UnityEngine.Color.red },
                     alignment = TextAnchor.MiddleCenter
                 };
                 GUILayout.Label(hotkeyManager.KeyAssignmentError, errorStyle, GUILayout.Height(25));
@@ -1881,15 +1974,15 @@ namespace dark_cheat
                 // Set background & text color based on selection
                 if (i == selectedPlayerIndex)
                 {
-                    playerButtonStyle.normal.background = MakeSolidBackground(new Color32(50, 50, 70, 255)); // Highlight
+                    playerButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(50, 50, 70, 255)); // Highlight
                     playerButtonStyle.normal.textColor = new Color32(255, 165, 0, 255);
                 }
                 else
                 {
-                    playerButtonStyle.normal.background = MakeSolidBackground(new Color32(30, 30, 30, 255)); // Default
-                    playerButtonStyle.normal.textColor = new Color(0.8f, 0.8f, 0.8f);
-                    playerButtonStyle.hover.background = MakeSolidBackground(new Color32(40, 40, 50, 255)); // On hover
-                    playerButtonStyle.hover.textColor = Color.white;
+                    playerButtonStyle.normal.background = MakeSolidBackground(new UnityEngine.Color32(30, 30, 30, 255)); // Default
+                    playerButtonStyle.normal.textColor = new UnityEngine.Color(0.8f, 0.8f, 0.8f);
+                    playerButtonStyle.hover.background = MakeSolidBackground(new UnityEngine.Color32(40, 40, 50, 255)); // On hover
+                    playerButtonStyle.hover.textColor = UnityEngine.Color.white;
                 }
 
                 if (GUILayout.Button(playerNames[i], playerButtonStyle))
@@ -1912,6 +2005,9 @@ namespace dark_cheat
             GUILayout.Space(5);
 
             if (GUILayout.Button("Infinite Loading Screen", buttonStyle)) { Troll.InfiniteLoadingSelectedPlayer(); }
+            GUILayout.Space(5);
+
+            if (GUILayout.Button("Remove Infinite Loading Screen", buttonStyle)) { Troll.SceneRecovery(); }
             GUILayout.Space(5);
 
             if (GUILayout.Button("Crash Selected Player", buttonStyle)) { MiscFeatures.CrashSelectedPlayerNew(); }
@@ -2005,7 +2101,7 @@ namespace dark_cheat
 
             for (int i = 0; i < colorOptions.Length; i++)
             {
-                Color previewColor = Color.white;
+                UnityEngine.Color previewColor = UnityEngine.Color.white;
                 if (i == 0) previewColor = DebugCheats.enemyVisibleColor;
                 else if (i == 1) previewColor = DebugCheats.enemyHiddenColor;
                 else if (i == 2) previewColor = DebugCheats.itemVisibleColor;
@@ -2026,7 +2122,7 @@ namespace dark_cheat
             GUILayout.Space(10);
 
             // Determine the current color based on the selected option
-            Color currentColor = Color.white;
+            UnityEngine.Color currentColor = UnityEngine.Color.white;
             if (selectedColorOption == 0) currentColor = DebugCheats.enemyVisibleColor;
             else if (selectedColorOption == 1) currentColor = DebugCheats.enemyHiddenColor;
             else if (selectedColorOption == 2) currentColor = DebugCheats.itemVisibleColor;
@@ -2075,7 +2171,7 @@ namespace dark_cheat
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            Color newColor = new Color(r, g, b, a);
+            UnityEngine.Color newColor = new UnityEngine.Color(r, g, b, a);
             if (newColor != currentColor)
             {
                 if (selectedColorOption == 0) DebugCheats.enemyVisibleColor = newColor;
@@ -2085,6 +2181,234 @@ namespace dark_cheat
             }
 
             GUILayout.EndVertical();
+        }
+
+        void DrawServersTab()
+        {
+            if (rowBgNormal == null)
+            {
+                rowBgNormal = MakeSolidBackground(new UnityEngine.Color32(30, 30, 30, 255));
+                rowBgHover = MakeSolidBackground(new UnityEngine.Color32(40, 40, 50, 255));
+                rowBgSelected = MakeSolidBackground(new UnityEngine.Color32(50, 50, 70, 255));
+            }
+
+            GUILayout.Label("Server Browser", titleStyle);
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Refresh Lobbies", buttonStyle, GUILayout.Width(160)))
+            {
+                LobbyHostCache.Clear();
+                LobbyMemberCache.Clear();
+                LobbyFinder.AlreadyTriedLobbies.Clear();
+                LobbyFinder.RefreshLobbies();
+            }
+            ToggleLogic("hide_full_lobbies", " Hide Full Lobbies", ref hideFullLobbies, null);
+            ToggleLogic("show_lobby_members", " Show Lobby Members", ref showMemberWindow, null);
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Search:", labelStyle, GUILayout.Width(60));
+            lobbySearchTerm = GUILayout.TextField(lobbySearchTerm, textFieldStyle, GUILayout.Width(260));
+
+            if (GUILayout.Button("Region A-Z", buttonStyle, GUILayout.Width(100))) sortMode = SortMode.RegionAZ;
+            if (GUILayout.Button("Region Z-A", buttonStyle, GUILayout.Width(100))) sortMode = SortMode.RegionZA;
+            if (GUILayout.Button("Most Players", buttonStyle, GUILayout.Width(110))) sortMode = SortMode.MostPlayers;
+            if (GUILayout.Button("Least Players", buttonStyle, GUILayout.Width(120))) sortMode = SortMode.LeastPlayers;
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Lobby Name", labelStyle, GUILayout.Width(280));
+            GUILayout.Space(10);
+            GUILayout.Label("Players", labelStyle, GUILayout.Width(80));
+            GUILayout.Space(10);
+            GUILayout.Label("Region", labelStyle, GUILayout.Width(80));
+            GUILayout.Space(50);
+            GUILayout.Label("Host", labelStyle, GUILayout.ExpandWidth(true));
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            serverListScroll = GUILayout.BeginScrollView(serverListScroll, boxStyle, GUILayout.Height(500));
+            var lobbies = new List<Lobby>(LobbyFinder.FoundLobbies);
+
+            switch (sortMode)
+            {
+                case SortMode.RegionAZ: lobbies.Sort((a, b) => string.Compare(a.GetData("Region"), b.GetData("Region"))); break;
+                case SortMode.RegionZA: lobbies.Sort((a, b) => string.Compare(b.GetData("Region"), a.GetData("Region"))); break;
+                case SortMode.MostPlayers: lobbies.Sort((a, b) => b.MemberCount.CompareTo(a.MemberCount)); break;
+                case SortMode.LeastPlayers: lobbies.Sort((a, b) => a.MemberCount.CompareTo(b.MemberCount)); break;
+            }
+
+            foreach (var lobby in lobbies)
+            {
+                if (hideFullLobbies && lobby.MemberCount >= lobby.MaxMembers)
+                    continue;
+
+                if (!LobbyHostCache.ContainsKey(lobby.Id))
+                    continue;
+
+                if (lobby.MemberCount < 3)
+                    continue;
+
+                string hostDisplay = LobbyHostCache.TryGetValue(lobby.Id, out var hostStr) ? hostStr : "Fetching...";
+
+                if (hostDisplay.Contains("Failed (0)"))
+                    continue;
+
+                bool matchesSearch = string.IsNullOrWhiteSpace(lobbySearchTerm) ||
+                    lobby.Id.ToString().IndexOf(lobbySearchTerm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    (hostDisplay.IndexOf(lobbySearchTerm, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (LobbyMemberCache.TryGetValue(lobby.Id, out var members) && members.Exists(m => m.IndexOf(lobbySearchTerm, StringComparison.OrdinalIgnoreCase) >= 0));
+
+
+                if (!matchesSearch) continue;
+
+                GUIStyle rowStyle = new GUIStyle(GUI.skin.button)
+                {
+                    alignment = TextAnchor.MiddleLeft,
+                    fontSize = 14,
+                    fontStyle = FontStyle.Bold,
+                    fixedHeight = 32,
+                    margin = new RectOffset(2, 2, 2, 2),
+                    padding = new RectOffset(8, 8, 4, 4),
+                    border = new RectOffset(4, 4, 4, 4)
+                };
+
+                if (lobby.Id == selectedLobbyId)
+                {
+                    rowStyle.normal.background = rowBgSelected;
+                    rowStyle.normal.textColor = new Color32(255, 165, 0, 255);
+                }
+                else
+                {
+                    rowStyle.normal.background = rowBgNormal;
+                    rowStyle.normal.textColor = new UnityEngine.Color(0.8f, 0.8f, 0.8f);
+                    rowStyle.hover.background = rowBgHover;
+                    rowStyle.hover.textColor = UnityEngine.Color.white;
+                }
+
+                GUILayout.BeginVertical();
+                GUILayout.BeginHorizontal();
+
+                string hostName = hostDisplay.Contains("(") ? hostDisplay.Substring(0, hostDisplay.IndexOf("(")).Trim() : hostDisplay;
+                string lobbyName = "Lobby of " + (string.IsNullOrWhiteSpace(hostName) ? "Unknown" : hostName);
+                if (lobby.MaxMembers > 6)
+                    lobbyName += " <color=red>(Modded)</color>";
+
+                string region = lobby.GetData("Region");
+                int current = Mathf.Max(0, lobby.MemberCount - 1);
+                int max = lobby.MaxMembers;
+
+                if (GUILayout.Button(lobbyName, rowStyle, GUILayout.Width(280)))
+                    selectedLobbyId = lobby.Id;
+
+                GUILayout.Space(10);
+                GUILayout.Label(current + "/" + max, labelStyle, GUILayout.Width(80));
+                GUILayout.Space(10);
+                GUILayout.Label(region, labelStyle, GUILayout.Width(80));
+                GUILayout.Space(10);
+                GUILayout.Label(hostDisplay, labelStyle, GUILayout.Width(260));
+
+                GUILayout.EndHorizontal();
+                GUILayout.Space(6);
+                GUILayout.EndVertical();
+                GUILayout.Space(4);
+            }
+            GUILayout.EndScrollView();
+
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("Join Lobby", buttonStyle, GUILayout.Width(120)))
+            {
+                var lobby = LobbyFinder.FoundLobbies.Find(l => l.Id == selectedLobbyId);
+                if (lobby.Id != 0)
+                {
+                    LobbyFinder.JoinLobbyAndPlay(lobby);
+                }
+            }
+
+            GUILayout.Space(12);
+
+            if (selectedLobbyId != 0 && LobbyFinder.FoundLobbies.Find(l => l.Id == selectedLobbyId) is Lobby selectedLobby)
+            {
+                string region = selectedLobby.GetData("Region");
+                string host = LobbyHostCache.TryGetValue(selectedLobbyId, out var hostStr) ? hostStr : "Unknown";
+                GUILayout.Label($"Selected: {selectedLobbyId} | Host: {host} | Region: {region}", labelStyle);
+            }
+
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button("Get Invite Link", buttonStyle, GUILayout.Width(150)))
+            {
+                if (LobbyFinder.FoundLobbies.Find(l => l.Id == selectedLobbyId) is Lobby inviteLobby)
+                {
+                    string hostSteamId = inviteLobby.Owner.Id.ToString();
+                    string invite = $"steam://joinlobby/3241660/{inviteLobby.Id}/{hostSteamId}";
+                    GUIUtility.systemCopyBuffer = invite;
+                    Debug.Log("[InviteLink] Copied: " + invite);
+                }
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        private void DrawTextEditorPopup(int id)
+        {
+            GUILayout.BeginVertical(boxStyle);
+            textboxscroll = GUILayout.BeginScrollView(textboxscroll, GUILayout.Height(235));
+            largeTextBoxContent = GUILayout.TextArea(largeTextBoxContent, GUILayout.ExpandHeight(true));
+            GUILayout.EndScrollView();
+            if (activeTextFieldId == "SpoofNameField")
+                spoofedNameText = largeTextBoxContent;
+            else if (activeTextFieldId == "PersistentSpoofNameField")
+                persistentNameText = largeTextBoxContent;
+            else if (activeTextFieldId == "chatmessageField")
+                chatMessageText = largeTextBoxContent;
+
+            GUILayout.Space(10);
+            if (GUILayout.Button("Close", buttonStyle, GUILayout.Height(25)))
+            {
+                showTextEditorPopup = false;
+                activeTextFieldId = null;
+            }
+
+            GUILayout.EndVertical();
+            GUI.DragWindow();
+        }
+
+        private void DrawLobbyMemberWindow(int id)
+        {
+            GUILayout.BeginVertical(boxStyle);
+            GUILayout.Label("Lobby Members", sectionHeaderStyle);
+            GUILayout.Space(4);
+            memberWindowScroll = GUILayout.BeginScrollView(memberWindowScroll, GUILayout.Height(150));
+            if (LobbyMemberCache.TryGetValue(selectedLobbyId, out var members))
+            {
+                foreach (var line in members)
+                {
+                    if (!line.Contains(SteamClient.Name))
+                    {
+                        GUILayout.Label("• " + line, labelStyle);
+                        GUILayout.Space(5);
+                    }
+                }
+            }
+            else
+            {
+                GUILayout.Label("Fetching players...", warningStyle);
+            }
+            GUILayout.EndScrollView();
+            GUILayout.Space(8);
+            if (GUILayout.Button("Close", buttonStyle))
+                showMemberWindow = false;
+            GUILayout.EndVertical();
+            GUI.DragWindow();
         }
 
         void InitStyles()
@@ -2110,11 +2434,11 @@ namespace dark_cheat
                     padding = new RectOffset(8, 8, 4, 4),
                     margin = new RectOffset(4, 4, 2, 2)
                 };
-                tabStyle.normal.textColor = new Color(0.85f, 0.85f, 0.85f);
+                tabStyle.normal.textColor = new UnityEngine.Color(0.85f, 0.85f, 0.85f);
                 tabStyle.normal.background = MakeSolidBackground(new Color32(40, 40, 40, 255));
                 tabStyle.hover.textColor = new Color32(255, 165, 0, 255);
                 tabStyle.hover.background = MakeSolidBackground(new Color32(50, 50, 50, 255));
-                tabStyle.active.textColor = Color.white;
+                tabStyle.active.textColor = UnityEngine.Color.white;
                 tabStyle.active.background = MakeSolidBackground(new Color32(20, 20, 20, 255));
 
                 tabSelectedStyle = new GUIStyle(tabStyle);
@@ -2126,7 +2450,7 @@ namespace dark_cheat
                 {
                     fontSize = 16,
                     fontStyle = FontStyle.Bold,
-                    normal = { textColor = new Color(1f, 0.5f, 0f) }
+                    normal = { textColor = new UnityEngine.Color(1f, 0.5f, 0f) }
                 };
 
                 // === BOX BACKGROUND ===
@@ -2238,11 +2562,12 @@ namespace dark_cheat
                 {
                     fontSize = 14,
                     fontStyle = FontStyle.Bold,
-                    normal = { textColor = Color.white }
+                    normal = { textColor = UnityEngine.Color.white }
                 };
+                labelStyle.richText = true;
 
                 warningStyle = new GUIStyle(labelStyle);
-                warningStyle.normal.textColor = Color.yellow;
+                warningStyle.normal.textColor = UnityEngine.Color.yellow;
 
                 // === TEXTFIELD ===
                 textFieldStyle = new GUIStyle(GUI.skin.textField)
@@ -2254,6 +2579,10 @@ namespace dark_cheat
                     margin = new RectOffset(4, 4, 4, 4),
                     border = new RectOffset(4, 4, 4, 4),
 
+                    // 👇 This makes the typing follow the cursor
+                    wordWrap = false,
+                    clipping = TextClipping.Clip,
+
                     normal =
                     {
                         background = MakeSolidBackground(new Color32(50, 50, 60, 255)),
@@ -2262,17 +2591,17 @@ namespace dark_cheat
                     focused =
                     {
                         background = MakeSolidBackground(new Color32(60, 60, 80, 255)),
-                        textColor = Color.white
+                        textColor = UnityEngine.Color.white
                     },
                     hover =
                     {
                         background = MakeSolidBackground(new Color32(55, 55, 70, 255)),
-                        textColor = Color.white
+                        textColor = UnityEngine.Color.white
                     },
                     active =
                     {
                         background = MakeSolidBackground(new Color32(70, 70, 90, 255)),
-                        textColor = Color.white
+                        textColor = UnityEngine.Color.white
                     }
                 };
 
@@ -2459,10 +2788,10 @@ namespace dark_cheat
             }
         }
 
-        Texture2D MakeSolidBackground(Color color)
+        Texture2D MakeSolidBackground(UnityEngine.Color color)
         {
             Texture2D texture = new Texture2D(4, 4);
-            Color[] pixels = new Color[16];
+            UnityEngine.Color[] pixels = new UnityEngine.Color[16];
             for (int i = 0; i < pixels.Length; i++) pixels[i] = color;
             texture.SetPixels(pixels);
             texture.Apply();
@@ -2470,18 +2799,18 @@ namespace dark_cheat
             return texture;
         }
 
-        public static Texture2D colorpicker(Color color, float alpha = 1f)
+        public static Texture2D colorpicker(UnityEngine.Color color, float alpha = 1f)
         {
             Texture2D tex = new Texture2D(1, 1);
-            tex.SetPixel(0, 0, new Color(color.r, color.g, color.b, alpha));
+            tex.SetPixel(0, 0, new UnityEngine.Color(color.r, color.g, color.b, alpha));
             tex.Apply();
             return tex;
         }
 
-        private Color GetContrastColor(Color backgroundColor)
+        private UnityEngine.Color GetContrastColor(UnityEngine.Color backgroundColor)
         {
             float brightness = (0.299f * backgroundColor.r + 0.587f * backgroundColor.g + 0.114f * backgroundColor.b);
-            return brightness < 0.5f ? Color.white : Color.black;
+            return brightness < 0.5f ? UnityEngine.Color.white : UnityEngine.Color.black;
         }
 
     }

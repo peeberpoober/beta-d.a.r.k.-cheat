@@ -425,6 +425,7 @@
     <Compile Include="Utils\GameHelper.cs" />
     <Compile Include="Utils\HotkeyManager.cs" />
     <Compile Include="Utils\ItemSync.cs" />
+    <Compile Include="Utils\LobbyFinder.cs" />
     <Compile Include="Utils\MapTools.cs" />
     <Compile Include="Utils\ChatHijack.cs" />
     <Compile Include="Utils\PlayerCheatSync.cs" />

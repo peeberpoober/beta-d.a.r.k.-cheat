@@ -9,6 +9,8 @@ using SingularityGroup.HotReload;
 using System.Linq;
 using System.IO;
 using ExitGames.Client.Photon;
+using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace dark_cheat
 {
@@ -70,6 +72,28 @@ namespace dark_cheat
             {
                 Debug.Log($"Error causing infinite loading screen {Hax2.playerNames[Hax2.selectedPlayerIndex]}: {e.Message}");
             }
+        }
+
+        public static void SceneRecovery()
+        {
+            Debug.Log("[Recovery] === Begin Scene Recovery ===");
+
+            SceneManager.LoadScene("LobbyJoin", LoadSceneMode.Single);
+            Debug.Log("[Recovery] Loaded LobbyJoin scene.");
+
+            Hax2.CoroutineHost.StartCoroutine(LoadReloadSceneAfterDelay());
+        }
+
+        private static IEnumerator LoadReloadSceneAfterDelay()
+        {
+            yield return new WaitForSeconds(3.0f);
+
+            SceneManager.LoadScene("Reload", LoadSceneMode.Single);
+            Debug.Log("[Recovery] Loaded Reload scene.");
+
+            yield return new WaitForSeconds(0.5f);
+            PhotonNetwork.Disconnect();
+            Debug.Log("[Recovery] === Scene Recovery Complete ===");
         }
 
         public static void ForcePlayerGlitch()
