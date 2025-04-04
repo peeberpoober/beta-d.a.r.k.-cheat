@@ -3,6 +3,7 @@ using Photon.Pun;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace dark_cheat
@@ -109,17 +110,18 @@ namespace dark_cheat
         [HarmonyPatch(typeof(EnemyVision), nameof(EnemyVision.VisionTrigger))]
         public static class EnemyVision_BlindEnemies_Patch
         {
-            static bool Prefix(int playerID, PlayerAvatar player, bool culled, bool playerNear)
+            static bool Prefix(PlayerAvatar player)
             {
-                if (!Hax2.blindEnemies)
+                if (!PhotonNetwork.IsMasterClient)
                 {
                     return true;
                 }
 
-                if (player != null && player.photonView != null)
+                if (player != null && player.photonView != null && player.photonView.Owner != null)
                 {
-                    // if player being "seen" is the local player, block
-                    if (player.photonView.IsMine)
+                    Photon.Realtime.Player ownerPlayer = player.photonView.Owner;
+
+                    if (ownerPlayer.CustomProperties.TryGetValue("isBlindEnabled", out object isBlindEnabledObj) && isBlindEnabledObj is bool && (bool)isBlindEnabledObj)
                     {
                         return false;
                     }
@@ -143,42 +145,38 @@ namespace dark_cheat
                     PlayerAvatar localPlayerAvatar = null;
                     GameObject localPlayerGO = null;
                     try
-                    { // in case DebugCheats isn't available/initialized yet
+                    {
                         localPlayerGO = DebugCheats.GetLocalPlayer();
                         if (localPlayerGO != null)
                         {
                             localPlayerAvatar = localPlayerGO.GetComponent<PlayerAvatar>();
                         }
                     }
-                    catch (System.Exception ex)
+                    catch (System.Exception)
                     {
-                        DLog.LogWarning($"Error accessing DebugCheats.GetLocalPlayer(): {ex.Message}");
+
                     }
 
-
-                    // fallback
                     if (localPlayerAvatar == null && GameDirector.instance != null && GameDirector.instance.PlayerList != null)
                     {
                         try
                         {
                             localPlayerAvatar = GameDirector.instance.PlayerList.FirstOrDefault(p => p != null && p.photonView != null && p.photonView.IsMine);
                         }
-                        catch (System.Exception ex)
+                        catch (System.Exception)
                         {
-                            DLog.LogWarning($"Error accessing GameDirector.instance.PlayerList: {ex.Message}");
+
                         }
                     }
 
                     if (localPlayerAvatar == null)
                     {
-                        DLog.LogWarning("EnemyStateInvestigate_BlindAudio_Patch: Could not find local player avatar via any method.");
                         return true;
                     }
 
 
                     Vector3 localPlayerPos = localPlayerAvatar.transform.position;
 
-                    // if sound close enough to be our player, block
                     if (Vector3.Distance(position, localPlayerPos) < LOCAL_PLAYER_SOUND_THRESHOLD)
                     {
                         return false;
@@ -189,7 +187,230 @@ namespace dark_cheat
             }
         }
 
-        // Remove the annoying truck engine at main menu
+        [HarmonyPatch(typeof(ItemGun), "ShootRPC")]
+        public class NoWeaponRecoil
+        {
+            public static bool _isEnabledForConfig = false;
+            private static float local_originalGrabStrengthMultiplier = -1f;
+            private static float local_originalTorqueMultiplier = -1f;
+            private static FieldInfo _photonViewField = AccessTools.Field(typeof(ItemGun), "photonView");
+            private static FieldInfo _physGrabObjectField = AccessTools.Field(typeof(ItemGun), "physGrabObject");
+            private static FieldInfo _grabStrengthMultiplierField = AccessTools.Field(typeof(ItemGun), "grabStrengthMultiplier");
+            private static FieldInfo _torqueMultiplierField = AccessTools.Field(typeof(ItemGun), "torqueMultiplier");
+
+            [HarmonyPrefix]
+            public static bool Prefix(ItemGun __instance)
+            {
+                local_originalGrabStrengthMultiplier = -1f;
+                local_originalTorqueMultiplier = -1f;
+
+                bool isMine = false;
+                try
+                {
+                    if (__instance != null && _photonViewField != null)
+                    {
+                        PhotonView pv = _photonViewField.GetValue(__instance) as PhotonView;
+                        if (pv != null)
+                            isMine = pv.IsMine;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                bool isCurrentlyEnabled = _isEnabledForConfig;
+                if (!isCurrentlyEnabled || !isMine)
+                    return true;
+
+                try
+                {
+                    if (_grabStrengthMultiplierField != null)
+                        local_originalGrabStrengthMultiplier = (float)_grabStrengthMultiplierField.GetValue(__instance);
+                    if (_torqueMultiplierField != null)
+                        local_originalTorqueMultiplier = (float)_torqueMultiplierField.GetValue(__instance);
+
+                    float weakMultiplier = 0.01f;
+                    if (_grabStrengthMultiplierField != null)
+                        _grabStrengthMultiplierField.SetValue(__instance, weakMultiplier);
+                    if (_torqueMultiplierField != null)
+                        _torqueMultiplierField.SetValue(__instance, weakMultiplier);
+
+                    __instance.gunRecoilForce = 0f;
+                    __instance.cameraShakeMultiplier = 0f;
+
+                    if (_physGrabObjectField != null)
+                    {
+                        PhysGrabObject gunPhysGrabObject = _physGrabObjectField.GetValue(__instance) as PhysGrabObject;
+                        if (gunPhysGrabObject != null)
+                        {
+                            float overrideDuration = 0.05f;
+                            float weakStrength = 0.1f;
+                            gunPhysGrabObject.OverrideGrabStrength(weakStrength, overrideDuration);
+                            gunPhysGrabObject.OverrideTorqueStrength(weakStrength, overrideDuration);
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                return true;
+            }
+
+            [HarmonyPostfix]
+            public static void Postfix(ItemGun __instance)
+            {
+                bool isMine = false;
+                try
+                {
+                    if (__instance != null && _photonViewField != null)
+                    {
+                        PhotonView pv = _photonViewField.GetValue(__instance) as PhotonView;
+                        if (pv != null)
+                            isMine = pv.IsMine;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                if (!isMine)
+                    return;
+
+                try
+                {
+                    if (local_originalGrabStrengthMultiplier != -1f && _grabStrengthMultiplierField != null)
+                        _grabStrengthMultiplierField.SetValue(__instance, local_originalGrabStrengthMultiplier);
+                    if (local_originalTorqueMultiplier != -1f && _torqueMultiplierField != null)
+                        _torqueMultiplierField.SetValue(__instance, local_originalTorqueMultiplier);
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                local_originalGrabStrengthMultiplier = -1f;
+                local_originalTorqueMultiplier = -1f;
+            }
+        }
+
+        [HarmonyPatch(typeof(ItemGun), "ShootRPC")]
+        public class NoWeaponSpread
+        {
+            private static float local_originalGunRandomSpread = -1f;
+            private static FieldInfo _photonViewField = AccessTools.Field(typeof(ItemGun), "photonView");
+
+            [HarmonyPrefix]
+            public static void Prefix(ItemGun __instance)
+            {
+                local_originalGunRandomSpread = -1f;
+
+                bool isMine = false;
+                try
+                {
+                    if (__instance != null && _photonViewField != null)
+                    {
+                        PhotonView pv = _photonViewField.GetValue(__instance) as PhotonView;
+                        if (pv != null)
+                            isMine = pv.IsMine;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                if (!isMine)
+                    return;
+
+                float spreadMultiplier = ConfigManager.CurrentSpreadMultiplier;
+                if (Mathf.Approximately(spreadMultiplier, 1.0f))
+                    return;
+
+                try
+                {
+                    local_originalGunRandomSpread = __instance.gunRandomSpread;
+                    float newSpread = local_originalGunRandomSpread * spreadMultiplier;
+                    __instance.gunRandomSpread = newSpread;
+                }
+                catch (System.Exception ex)
+                {
+                }
+            }
+
+            [HarmonyPostfix]
+            public static void Postfix(ItemGun __instance)
+            {
+                bool isMine = false;
+                try
+                {
+                    if (__instance != null && _photonViewField != null)
+                    {
+                        PhotonView pv = _photonViewField.GetValue(__instance) as PhotonView;
+                        if (pv != null)
+                            isMine = pv.IsMine;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                if (!isMine || local_originalGunRandomSpread < 0f)
+                    return;
+
+                try
+                {
+                    __instance.gunRandomSpread = local_originalGunRandomSpread;
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                local_originalGunRandomSpread = -1f;
+            }
+        }
+
+        [HarmonyPatch(typeof(ItemGun), "UpdateMaster")]
+        public class NoWeaponCooldown
+        {
+            private static FieldInfo _photonViewField = AccessTools.Field(typeof(ItemGun), "photonView");
+            private static FieldInfo _shootCooldownTimerField = AccessTools.Field(typeof(ItemGun), "shootCooldownTimer");
+
+            [HarmonyPrefix]
+            public static bool Prefix(ItemGun __instance)
+            {
+                bool noCooldownEnabled = ConfigManager.NoWeaponCooldownEnabled;
+                if (!noCooldownEnabled)
+                    return true;
+
+                bool isMine = false;
+                try
+                {
+                    if (__instance != null && _photonViewField != null)
+                    {
+                        PhotonView pv = _photonViewField.GetValue(__instance) as PhotonView;
+                        if (pv != null)
+                            isMine = pv.IsMine;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                if (!isMine)
+                    return true;
+
+                try
+                {
+                    if (_shootCooldownTimerField != null)
+                        _shootCooldownTimerField.SetValue(__instance, 0f);
+                }
+                catch (System.Exception ex)
+                {
+                }
+
+                return true;
+            }
+        }
+
         [HarmonyPatch(typeof(Sound), "PlayLoop")]
         class BlockMenuTruckLoop_PlayLoop
         {

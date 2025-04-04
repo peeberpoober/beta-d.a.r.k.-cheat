@@ -1,4 +1,5 @@
 ﻿using dark_cheat;
+using Photon.Pun;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -10,6 +11,20 @@ namespace dark_cheat
         public static void SaveToggle(string key, bool value)
         {
             PlayerPrefs.SetInt(key, value ? 1 : 0);
+        }
+
+        public static void SaveFloat(string key, float value)
+        {
+            PlayerPrefs.SetFloat(key, value);
+        }
+
+        public static float CurrentSpreadMultiplier = 1.0f;
+
+        public static bool NoWeaponCooldownEnabled = false;
+
+        public static float LoadFloat(string key, float defaultValue = 1.0f)
+        {
+            return PlayerPrefs.GetFloat(key, defaultValue);
         }
 
         public static bool LoadToggle(string key, bool defaultValue = false)
@@ -27,6 +42,9 @@ namespace dark_cheat
             ConfigManager.SaveToggle("rgb_player", playerColor.isRandomizing);
             ConfigManager.SaveToggle("No_Fog", MiscFeatures.NoFogEnabled);
             ConfigManager.SaveToggle("WaterMark_Toggle", Hax2.showWatermark);
+            ConfigManager.SaveToggle("no_weapon_recoil", Patches.NoWeaponRecoil._isEnabledForConfig);
+            ConfigManager.SaveFloat("weapon_spread_multiplier", CurrentSpreadMultiplier);
+            ConfigManager.SaveToggle("no_weapon_cooldown", NoWeaponCooldownEnabled);
 
             //Visuals Tab
             ConfigManager.SaveToggle("drawEspBool", DebugCheats.drawEspBool);
@@ -82,6 +100,10 @@ namespace dark_cheat
             playerColor.isRandomizing = ConfigManager.LoadToggle("rgb_player", false);
             MiscFeatures.NoFogEnabled = ConfigManager.LoadToggle("No_Fog", false);
             Hax2.showWatermark = ConfigManager.LoadToggle("WaterMark_Toggle", true);
+            bool loadedNoRecoilState = LoadToggle("no_weapon_recoil", false);
+            Patches.NoWeaponRecoil._isEnabledForConfig = loadedNoRecoilState;
+            CurrentSpreadMultiplier = LoadFloat("weapon_spread_multiplier", 1.0f);
+            NoWeaponCooldownEnabled = LoadToggle("no_weapon_cooldown", false);
 
             // Visuals Tab
             DebugCheats.drawEspBool = ConfigManager.LoadToggle("drawEspBool", false);
@@ -113,6 +135,12 @@ namespace dark_cheat
 
             // Enemies Tab
             Hax2.blindEnemies = ConfigManager.LoadToggle("blind_enemies", false);
+            if (PhotonNetwork.IsConnected && PhotonNetwork.LocalPlayer != null)
+            {
+                ExitGames.Client.Photon.Hashtable initialProps = new ExitGames.Client.Photon.Hashtable();
+                initialProps["isBlindEnabled"] = Hax2.blindEnemies;
+                PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
+            }
         }
     }
 }
