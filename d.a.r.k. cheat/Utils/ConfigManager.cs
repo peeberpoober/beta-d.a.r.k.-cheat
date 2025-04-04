@@ -13,19 +13,10 @@ namespace dark_cheat
             PlayerPrefs.SetInt(key, value ? 1 : 0);
         }
 
-        public static void SaveFloat(string key, float value)
-        {
-            PlayerPrefs.SetFloat(key, value);
-        }
-
         public static float CurrentSpreadMultiplier = 1.0f;
 
         public static bool NoWeaponCooldownEnabled = false;
 
-        public static float LoadFloat(string key, float defaultValue = 1.0f)
-        {
-            return PlayerPrefs.GetFloat(key, defaultValue);
-        }
 
         public static bool LoadToggle(string key, bool defaultValue = false)
         {
