@@ -56,7 +56,7 @@ namespace dark_cheat
                     bool currentGodMode = (bool)godModeField.GetValue(PlayerReflectionCache.PlayerHealthInstance);
                     bool newGodModeState = !currentGodMode;
                     godModeField.SetValue(PlayerReflectionCache.PlayerHealthInstance, newGodModeState);
-                    Hax2.godModeActive = !newGodModeState;
+                    Hax2.godModeActive = newGodModeState;
                     DLog.Log("God Mode " + (newGodModeState ? "enabled" : "disabled"));
                 }
                 else
@@ -569,17 +569,17 @@ namespace dark_cheat
             float finalMaxStamina = Mathf.Max(cheatMaxStamina, currentMaxStamina); // Use the higher value.
             SetMaxStamina(finalMaxStamina); // Apply the new max stamina.
 
-            SetSprintSpeed(Hax2.sliderValue);   
+            SetSprintSpeed(5);   
             Strength.MaxStrength();      
             MaxStamina();        
             ReapplyStaminaSettings();
             SetThrowStrength(Hax2.throwStrength);
-            SetGrabRange(Hax2.grabRange);
+            SetGrabRange(5);
             SetCrouchDelay(Hax2.crouchDelay);
-            SetCrouchSpeed(Hax2.crouchSpeed);
-            SetJumpForce(Hax2.jumpForce);
-            SetExtraJumps(Hax2.extraJumps);
-            SetCustomGravity(Hax2.customGravity);
+            SetCrouchSpeed(1);
+            SetJumpForce(17);
+            SetExtraJumps(0);
+            SetCustomGravity(30);
             SetSlideDecay(Hax2.slideDecay);
             SetFlashlightIntensity(Hax2.flashlightIntensity);
             if (FOVEditor.Instance != null)
@@ -621,15 +621,15 @@ namespace dark_cheat
                 return fallback;
             }
 
-            Hax2.sliderValue = GetFloat("SprintSpeed", 5f);
-            Hax2.sliderValueStrength = GetFloat("grabStrength", 1f);
-            Hax2.throwStrength = GetFloat("throwStrength", 1f);
-            Hax2.grabRange = GetFloat("grabRange", 5f);
-            Hax2.jumpForce = GetFloat("JumpForce", 10f);
-            Hax2.crouchSpeed = GetFloat("CrouchSpeed", 3f);
-            Hax2.crouchDelay = GetFloat("CrouchTimeMin", 0.2f);
-            Hax2.customGravity = GetFloat("CustomGravity", 9.81f);
-            Hax2.extraJumps = GetInt("JumpExtra", 1); // oops - we cant set this 0 as int
+            //Hax2.sliderValue = GetFloat("SprintSpeed", 0f);
+            //Hax2.sliderValueStrength = GetFloat("grabStrength", 1f);
+            //Hax2.throwStrength = GetFloat("throwStrength", 1f);
+            //Hax2.grabRange = GetFloat("grabRange", 5f);
+            //Hax2.jumpForce = GetFloat("JumpForce", 0f);
+            Hax2.crouchSpeed = GetFloat("CrouchSpeed", 1f);
+            Hax2.crouchDelay = GetFloat("CrouchTimeMin", 0f);
+            //Hax2.customGravity = GetFloat("CustomGravity", 0f);
+            Hax2.extraJumps = GetInt("JumpExtra", 0); // oops - we cant set this 0 as int
             Hax2.flashlightIntensity = 1f;
 
             Hax2.fieldOfView = 70f;

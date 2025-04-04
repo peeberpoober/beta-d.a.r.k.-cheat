@@ -17,6 +17,43 @@ namespace dark_cheat
             return PlayerPrefs.GetInt(key, defaultValue ? 1 : 0) == 1;
         }
 
+        public static void SaveFloat(string key, float value)
+        {
+            PlayerPrefs.SetFloat(key, value);
+        }
+
+        public static float LoadFloat(string key, float defaultValue = 0f)
+        {
+            return PlayerPrefs.GetFloat(key, defaultValue);
+        }
+
+        public static void SaveColor(string key, Color color)
+        {
+            PlayerPrefs.SetFloat(key + "_r", color.r);
+            PlayerPrefs.SetFloat(key + "_g", color.g);
+            PlayerPrefs.SetFloat(key + "_b", color.b);
+            PlayerPrefs.SetFloat(key + "_a", color.a);
+        }
+
+        public static Color LoadColor(string key, Color defaultColor)
+        {
+            float r = PlayerPrefs.GetFloat(key + "_r", defaultColor.r);
+            float g = PlayerPrefs.GetFloat(key + "_g", defaultColor.g);
+            float b = PlayerPrefs.GetFloat(key + "_b", defaultColor.b);
+            float a = PlayerPrefs.GetFloat(key + "_a", defaultColor.a);
+            return new Color(r, g, b, a);
+        }
+
+        public static void SaveInt(string key, int value)
+        {
+            PlayerPrefs.SetInt(key, value);
+        }
+
+        public static int LoadInt(string key, int defaultValue = 0)
+        {
+            return PlayerPrefs.GetInt(key, defaultValue);
+        }
+
         public static void SaveAllToggles()
         {
             //Self Tab
@@ -27,11 +64,33 @@ namespace dark_cheat
             ConfigManager.SaveToggle("rgb_player", playerColor.isRandomizing);
             ConfigManager.SaveToggle("No_Fog", MiscFeatures.NoFogEnabled);
             ConfigManager.SaveToggle("WaterMark_Toggle", Hax2.showWatermark);
+            ConfigManager.SaveToggle("grab_guard", Hax2.debounce);
+
+            //Sliders
+            ConfigManager.SaveFloat("strength", Hax2.sliderValueStrength);
+            ConfigManager.SaveFloat("throw_strength", Hax2.throwStrength);
+            ConfigManager.SaveFloat("speed", Hax2.sliderValue);
+            ConfigManager.SaveFloat("grab_Range", Hax2.grabRange);
+            ConfigManager.SaveFloat("stam_Recharge_Delay", Hax2.staminaRechargeDelay);
+            ConfigManager.SaveFloat("stam_Recharge_Rate", Hax2.staminaRechargeRate);
+            ConfigManager.SaveInt("extra_jumps", Hax2.extraJumps);
+            ConfigManager.SaveFloat("tumble_launch", Hax2.tumbleLaunch);
+            ConfigManager.SaveFloat("jump_force", Hax2.jumpForce);
+            ConfigManager.SaveFloat("gravity", Hax2.customGravity);
+            ConfigManager.SaveFloat("crouch_delay", Hax2.crouchDelay);
+            ConfigManager.SaveFloat("crouch_speed", Hax2.crouchSpeed);
+            ConfigManager.SaveFloat("slide_decay", Hax2.slideDecay);
+            ConfigManager.SaveFloat("flashlight_intensity", Hax2.flashlightIntensity);
+            ConfigManager.SaveFloat("field_of_view", Hax2.fieldOfView);
+            ConfigManager.SaveFloat("max_item_distance", DebugCheats.maxItemEspDistance);
+            ConfigManager.SaveInt("min_item_value", DebugCheats.minItemValue);
 
             //Visuals Tab
             ConfigManager.SaveToggle("drawEspBool", DebugCheats.drawEspBool);
             ConfigManager.SaveToggle("showEnemyBox", DebugCheats.showEnemyBox);
             ConfigManager.SaveToggle("drawChamsBool", DebugCheats.drawChamsBool);
+            ConfigManager.SaveColor("enemy_visible_color", DebugCheats.enemyVisibleColor);
+            ConfigManager.SaveColor("enemy_invisible_color", DebugCheats.enemyHiddenColor);
             ConfigManager.SaveToggle("showEnemyNames", DebugCheats.showEnemyNames);
             ConfigManager.SaveToggle("showEnemyDistance", DebugCheats.showEnemyDistance);
             ConfigManager.SaveToggle("showEnemyHP", DebugCheats.showEnemyHP);
@@ -39,6 +98,8 @@ namespace dark_cheat
             ConfigManager.SaveToggle("drawItemEspBool", DebugCheats.drawItemEspBool);
             ConfigManager.SaveToggle("showItemBox", DebugCheats.draw3DItemEspBool);
             ConfigManager.SaveToggle("drawItemChamsBool", DebugCheats.drawItemChamsBool);
+            ConfigManager.SaveColor("item_visible_color", DebugCheats.itemVisibleColor);
+            ConfigManager.SaveColor("item_invisible_color", DebugCheats.itemHiddenColor);
             ConfigManager.SaveToggle("showItemNames", DebugCheats.showItemNames);
             ConfigManager.SaveToggle("showItemDistance", DebugCheats.showItemDistance);
             ConfigManager.SaveToggle("showItemValue", DebugCheats.showItemValue);
@@ -82,11 +143,33 @@ namespace dark_cheat
             playerColor.isRandomizing = ConfigManager.LoadToggle("rgb_player", false);
             MiscFeatures.NoFogEnabled = ConfigManager.LoadToggle("No_Fog", false);
             Hax2.showWatermark = ConfigManager.LoadToggle("WaterMark_Toggle", true);
+            Hax2.debounce = ConfigManager.LoadToggle("grab_guard", true);
+
+            //Sliders
+            Hax2.sliderValueStrength = ConfigManager.LoadFloat("strength", Hax2.sliderValueStrength);
+            Hax2.throwStrength = ConfigManager.LoadFloat("throw_strength", Hax2.throwStrength);
+            Hax2.sliderValue = ConfigManager.LoadFloat("speed", Hax2.sliderValue);
+            Hax2.grabRange = ConfigManager.LoadFloat("grab_Range", Hax2.grabRange);
+            Hax2.staminaRechargeDelay = ConfigManager.LoadFloat("stam_Recharge_Delay", Hax2.staminaRechargeDelay);
+            Hax2.staminaRechargeRate = ConfigManager.LoadFloat("stam_Recharge_Rate", Hax2.staminaRechargeRate);
+            Hax2.extraJumps = ConfigManager.LoadInt("extra_jumps", Hax2.extraJumps);
+            Hax2.tumbleLaunch = ConfigManager.LoadFloat("tumble_launch", Hax2.tumbleLaunch);
+            Hax2.jumpForce = ConfigManager.LoadFloat("jump_force", Hax2.jumpForce);
+            Hax2.customGravity = ConfigManager.LoadFloat("gravity", Hax2.customGravity);
+            Hax2.crouchDelay = ConfigManager.LoadFloat("crouch_delay", Hax2.crouchDelay);
+            Hax2.crouchSpeed = ConfigManager.LoadFloat("crouch_speed", Hax2.crouchSpeed);
+            Hax2.slideDecay = ConfigManager.LoadFloat("slide_decay", Hax2.slideDecay);
+            Hax2.flashlightIntensity = ConfigManager.LoadFloat("flashlight_intensity", Hax2.flashlightIntensity);
+            Hax2.fieldOfView = ConfigManager.LoadFloat("field_of_view", Hax2.fieldOfView);
+            DebugCheats.maxItemEspDistance = ConfigManager.LoadFloat("max_item_distance", DebugCheats.maxItemEspDistance);
+            DebugCheats.minItemValue = ConfigManager.LoadInt("min_item_value", DebugCheats.minItemValue);
 
             // Visuals Tab
             DebugCheats.drawEspBool = ConfigManager.LoadToggle("drawEspBool", false);
             DebugCheats.showEnemyBox = ConfigManager.LoadToggle("showEnemyBox", true);
             DebugCheats.drawChamsBool = ConfigManager.LoadToggle("drawChamsBool", false);
+            DebugCheats.enemyVisibleColor = ConfigManager.LoadColor("enemy_visible_color", DebugCheats.enemyVisibleColor);
+            DebugCheats.enemyHiddenColor = ConfigManager.LoadColor("enemy_invisible_color", DebugCheats.enemyHiddenColor);
             DebugCheats.showEnemyNames = ConfigManager.LoadToggle("showEnemyNames", true);
             DebugCheats.showEnemyDistance = ConfigManager.LoadToggle("showEnemyDistance", true);
             DebugCheats.showEnemyHP = ConfigManager.LoadToggle("showEnemyHP", true);
@@ -94,6 +177,8 @@ namespace dark_cheat
             DebugCheats.drawItemEspBool = ConfigManager.LoadToggle("drawItemEspBool", false);
             DebugCheats.draw3DItemEspBool = ConfigManager.LoadToggle("showItemBox", false);
             DebugCheats.drawItemChamsBool = ConfigManager.LoadToggle("drawItemChamsBool", false);
+            DebugCheats.itemVisibleColor = ConfigManager.LoadColor("item_visible_color", DebugCheats.itemVisibleColor);
+            DebugCheats.itemHiddenColor = ConfigManager.LoadColor("item_invisible_color", DebugCheats.itemHiddenColor);
             DebugCheats.showItemNames = ConfigManager.LoadToggle("showItemNames", true);
             DebugCheats.showItemDistance = ConfigManager.LoadToggle("showItemDistance", true);
             DebugCheats.showItemValue = ConfigManager.LoadToggle("showItemValue", true);

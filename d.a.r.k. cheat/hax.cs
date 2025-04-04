@@ -67,10 +67,6 @@ namespace dark_cheat
         private int selectedEnemyIndex = 0;
         private List<string> enemyNames = new List<string>();
         private List<Enemy> enemyList = new List<Enemy>();
-        public static float oldSliderValue = 0.0f;
-        public static float oldSliderValueStrength = 0.0f;
-        public static float sliderValue = 0.0f;
-        public static float sliderValueStrength = 0.0f;
         public static float offsetESp = 0.0f;
         public static bool showMenu = true;
         public static bool godModeActive = false;
@@ -152,27 +148,32 @@ namespace dark_cheat
         };
         private int previousItemCount = 0;
 
+        //SLIDER VALUES
+        public static float sliderValue = 1f;
+        public static float sliderValueStrength = 1f;
         public static float jumpForce = 1f;
         public static float customGravity = 1f;
-        public static int extraJumps = 1;
-        public static float flashlightIntensity = 1f;
-        public static float crouchDelay = 1f;
-        public static float crouchSpeed = 1f;
+        public static int extraJumps = 0;
+        public static float flashlightIntensity = 0f;
+        public static float crouchDelay = 0f;
+        public static float crouchSpeed = 0f;
         public static float grabRange = 1f;
-        public static float tumbleLaunch = 1f;
-        public static float throwStrength = 1f;
-        public static float slideDecay = 1f;
+        public static float tumbleLaunch = 0f;
+        public static float throwStrength = 0f;
+        public static float slideDecay = 0f;
 
-        public static float OldflashlightIntensity = 1f;
-        public static float OldcrouchDelay = 1f;
+        public static float oldSliderValue = 1f;
+        public static float oldSliderValueStrength = 1f;
         public static float OldjumpForce = 1f;
         public static float OldcustomGravity = 1f;
-        public static float OldextraJumps = 1f;
-        public static float OldcrouchSpeed = 1f;
+        public static float OldextraJumps = 0f;
+        public static float OldflashlightIntensity = 0f;
+        public static float OldcrouchDelay = 0f;
+        public static float OldcrouchSpeed = 0f;
         public static float OldgrabRange = 1f;
-        public static float OldtumbleLaunch = 1f;
-        public static float OldthrowStrength = 1f;
-        public static float OldslideDecay = 1f;
+        public static float OldtumbleLaunch = 0f;
+        public static float OldthrowStrength = 0f;
+        public static float OldslideDecay = 0f;
 
         private List<ItemTeleport.GameItem> itemList = new List<ItemTeleport.GameItem>();
         private int selectedItemIndex = 0;
@@ -655,18 +656,14 @@ namespace dark_cheat
 
             if (useModernESP)
             {
-                if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool ||
-                    DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool ||
-                    DebugCheats.drawChamsBool)
+                if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool || DebugCheats.drawPlayerEspBool)
                 {
                     ModernESP.Render();
                 }
             }
             else
             {
-                if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool ||
-                    DebugCheats.drawPlayerEspBool || DebugCheats.draw3DPlayerEspBool || DebugCheats.draw3DItemEspBool ||
-                    DebugCheats.drawChamsBool)
+                if (DebugCheats.drawEspBool || DebugCheats.drawItemEspBool || DebugCheats.drawExtractionPointEspBool || DebugCheats.drawPlayerEspBool)
                 {
                     DebugCheats.DrawESP();
                     ModernESP.ClearItemLabels();
@@ -919,7 +916,7 @@ namespace dark_cheat
             GUILayout.Space(10);
 
             GUILayout.Label("Strength: " + Mathf.RoundToInt(sliderValueStrength), labelStyle);
-            sliderValueStrength = GUILayout.HorizontalSlider(sliderValueStrength, 0f, 15f, GUILayout.Width(200));
+            sliderValueStrength = GUILayout.HorizontalSlider(sliderValueStrength, 1f, 30f, GUILayout.Width(200));
             if (sliderValueStrength != oldSliderValueStrength)
             {
                 int newStrength = Mathf.RoundToInt(sliderValueStrength);
@@ -942,7 +939,7 @@ namespace dark_cheat
 
             // Display label and slider
             GUILayout.Label("Throw Strength: " + Mathf.RoundToInt(throwStrength), labelStyle);
-            throwStrength = GUILayout.HorizontalSlider(throwStrength, 0f, 20f, GUILayout.Width(200));
+            throwStrength = GUILayout.HorizontalSlider(throwStrength, 0f, 30f, GUILayout.Width(200));
             if (throwStrength != OldthrowStrength)
             {
                 int newThrowStrength = Mathf.RoundToInt(throwStrength);
@@ -964,7 +961,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Speed: " + Mathf.RoundToInt(sliderValue), labelStyle);
-            sliderValue = GUILayout.HorizontalSlider(sliderValue, 0f, 10f, GUILayout.Width(200));
+            sliderValue = GUILayout.HorizontalSlider(sliderValue, 1f, 30f, GUILayout.Width(200));
             if (sliderValue != oldSliderValue)
             {
                 int newSpeed = Mathf.RoundToInt(sliderValue);
@@ -986,7 +983,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Grab Range: " + Mathf.RoundToInt(grabRange), labelStyle);
-            grabRange = GUILayout.HorizontalSlider(grabRange, 0f, 20f, GUILayout.Width(200));
+            grabRange = GUILayout.HorizontalSlider(grabRange, 1f, 30f, GUILayout.Width(200));
             if (grabRange != OldgrabRange)
             {
                 int newGrabRange = Mathf.RoundToInt(grabRange);
@@ -1008,7 +1005,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Stamina Recharge Delay: " + Mathf.RoundToInt(staminaRechargeDelay), labelStyle);
-            staminaRechargeDelay = GUILayout.HorizontalSlider(staminaRechargeDelay, 0f, 20f, GUILayout.Width(200));
+            staminaRechargeDelay = GUILayout.HorizontalSlider(staminaRechargeDelay, 1f, 30f, GUILayout.Width(200));
             if (staminaRechargeDelay != oldStaminaRechargeDelay)
             {
                 oldStaminaRechargeDelay = staminaRechargeDelay;
@@ -1016,7 +1013,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Stamina Recharge Rate: " + Mathf.RoundToInt(staminaRechargeRate), labelStyle);
-            staminaRechargeRate = GUILayout.HorizontalSlider(staminaRechargeRate, 0f, 20f, GUILayout.Width(200));
+            staminaRechargeRate = GUILayout.HorizontalSlider(staminaRechargeRate, 1f, 30f, GUILayout.Width(200));
             if (staminaRechargeDelay != oldStaminaRechargeDelay || staminaRechargeRate != oldStaminaRechargeRate)
             {
                 PlayerController.DecreaseStaminaRechargeDelay(staminaRechargeDelay, staminaRechargeRate);
@@ -1026,7 +1023,7 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Extra Jumps: " + Mathf.RoundToInt(extraJumps), labelStyle);
-            extraJumps = (int)GUILayout.HorizontalSlider(extraJumps, 0f, 20f, GUILayout.Width(200));
+            extraJumps = (int)GUILayout.HorizontalSlider(extraJumps, 0f, 30f, GUILayout.Width(200));
             if (extraJumps != OldextraJumps)
             {
                 int newExtraJumps = Mathf.RoundToInt(extraJumps);
@@ -1070,51 +1067,51 @@ namespace dark_cheat
             }
 
             GUILayout.Label("Jump Force: " + Mathf.RoundToInt(jumpForce), labelStyle);
-            jumpForce = GUILayout.HorizontalSlider(jumpForce, 0f, 20f, GUILayout.Width(200));
-            if (Hax2.jumpForce != Hax2.OldjumpForce)
+            jumpForce = GUILayout.HorizontalSlider(jumpForce, 1f, 30f, GUILayout.Width(200));
+            if (jumpForce != OldjumpForce)
             {
-                PlayerController.SetJumpForce(Hax2.jumpForce);
-                OldjumpForce = Hax2.jumpForce;
+                PlayerController.SetJumpForce(17+jumpForce);
+                OldjumpForce = jumpForce;
             }
 
             GUILayout.Label("Gravity: " + Mathf.RoundToInt(customGravity), labelStyle);
-            customGravity = GUILayout.HorizontalSlider(customGravity, 0f, 20f, GUILayout.Width(200));
-            if (Hax2.customGravity != Hax2.OldcustomGravity)
+            customGravity = GUILayout.HorizontalSlider(customGravity, 1f, 30f, GUILayout.Width(200));
+            if (customGravity != OldcustomGravity)
             {
-                PlayerController.SetCustomGravity(Hax2.customGravity);
-                OldcustomGravity = Hax2.customGravity;
+                PlayerController.SetCustomGravity(30+customGravity);
+                OldcustomGravity = customGravity;
             }
 
             GUILayout.Label("Crouch Delay: " + Mathf.RoundToInt(crouchDelay), labelStyle);
-            crouchDelay = GUILayout.HorizontalSlider(crouchDelay, 0f, 20f, GUILayout.Width(200));
+            crouchDelay = GUILayout.HorizontalSlider(crouchDelay, 0f, 30f, GUILayout.Width(200));
             if (crouchDelay != OldcrouchDelay)
             {
-                PlayerController.SetCrouchDelay(Hax2.crouchDelay);
-                OldcrouchDelay = Hax2.crouchDelay;
+                PlayerController.SetCrouchDelay(crouchDelay);
+                OldcrouchDelay = crouchDelay;
             }
 
             GUILayout.Label("Crouch Speed: " + Mathf.RoundToInt(crouchSpeed), labelStyle);
-            crouchSpeed = GUILayout.HorizontalSlider(crouchSpeed, 0f, 20f, GUILayout.Width(200));
-            if (Hax2.crouchSpeed != Hax2.OldcrouchSpeed)
+            crouchSpeed = GUILayout.HorizontalSlider(crouchSpeed, 1f, 30f, GUILayout.Width(200));
+            if (crouchSpeed != OldcrouchSpeed)
             {
-                PlayerController.SetCrouchSpeed(Hax2.crouchSpeed);
-                OldcrouchSpeed = Hax2.crouchSpeed;
+                PlayerController.SetCrouchSpeed(crouchSpeed);
+                OldcrouchSpeed = crouchSpeed;
             }
 
             GUILayout.Label("Slide Decay: " + Mathf.RoundToInt(slideDecay), labelStyle);
             slideDecay = GUILayout.HorizontalSlider(slideDecay, 0f, 20f, GUILayout.Width(200));
-            if (Hax2.slideDecay != Hax2.OldslideDecay)
+            if (slideDecay != OldslideDecay)
             {
-                PlayerController.SetSlideDecay(Hax2.slideDecay);
-                OldslideDecay = Hax2.slideDecay;
+                PlayerController.SetSlideDecay(slideDecay);
+                OldslideDecay = slideDecay;
             }
 
             GUILayout.Label("Flashlight Intensity: " + Mathf.RoundToInt(flashlightIntensity), labelStyle);
-            flashlightIntensity = GUILayout.HorizontalSlider(flashlightIntensity, 0f, 20f, GUILayout.Width(200));
-            if (Hax2.flashlightIntensity != OldflashlightIntensity)
+            flashlightIntensity = GUILayout.HorizontalSlider(flashlightIntensity, 1f, 20f, GUILayout.Width(200));
+            if (flashlightIntensity != OldflashlightIntensity)
             {
-                PlayerController.SetFlashlightIntensity(Hax2.flashlightIntensity);
-                OldflashlightIntensity = Hax2.flashlightIntensity;
+                PlayerController.SetFlashlightIntensity(flashlightIntensity);
+                OldflashlightIntensity = flashlightIntensity;
             }
 
             // Ensure FOVEditor exists
@@ -1132,7 +1129,7 @@ namespace dark_cheat
                 if (newFOV != currentFOV)
                 {
                     FOVEditor.Instance.SetFOV(newFOV);
-                    Hax2.fieldOfView = newFOV;
+                    fieldOfView = newFOV;
                 }
             }
             else
@@ -1846,10 +1843,10 @@ namespace dark_cheat
                 if (isValuable)
                 {
                     GUILayout.Label($"Item Value: ${itemSpawnValue:n0}", labelStyle);
-                    float sliderValue = Mathf.Log10((float)itemSpawnValue / 1000f) / 6f;
-                    float newSliderValue = GUILayout.HorizontalSlider(sliderValue, 0f, 1f);
-                    if (newSliderValue != sliderValue && isHost)
-                        itemSpawnValue = Mathf.Clamp((int)(Mathf.Pow(10, newSliderValue * 6f) * 1000f), 1000, 1000000000);
+                    float itemsliderValue = Mathf.Log10((float)itemSpawnValue / 1000f) / 6f;
+                    float newitemSliderValue = GUILayout.HorizontalSlider(itemsliderValue, 0f, 1f);
+                    if (newitemSliderValue != itemsliderValue && isHost)
+                        itemSpawnValue = Mathf.Clamp((int)(Mathf.Pow(10, newitemSliderValue * 6f) * 1000f), 1000, 1000000000);
                 }
 
                 GUI.enabled = availableItemsList.Count > 0 && selectedItemToSpawnIndex < availableItemsList.Count;
