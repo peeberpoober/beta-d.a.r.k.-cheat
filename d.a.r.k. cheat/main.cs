@@ -18,26 +18,6 @@ namespace dark_cheat
             if (type == LogType.Warning && condition.Contains("Unicode value") && condition.Contains("font asset"))
                 return;
 
-            if (type == LogType.Error && condition.Contains("DefaultPool failed to load"))
-            {
-                if (!hasTriggeredRecovery)
-                {
-                    hasTriggeredRecovery = true;
-                    Debug.Log("[AutoRecovery] Detected missing prefab error. Triggering recovery...");
-
-                    Hax2.CoroutineHost.StartCoroutine(DelayedRecovery(1.0f));
-                }
-            }
-        }
-
-        private static IEnumerator DelayedRecovery(float delay)
-        {
-            yield return new WaitForSeconds(delay);
-
-            Troll.SceneRecovery();
-
-            yield return new WaitForSeconds(5.0f);
-            hasTriggeredRecovery = false;
         }
 
         public static void Init()
