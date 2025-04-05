@@ -7,32 +7,12 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Collections;
+using Unity.VisualScripting;
 namespace dark_cheat
 {
     static class DebugCheats
     {
-        private static bool _drawItemChamsBool = false;
-        public static bool drawItemChamsBool
-        {
-            get => _drawItemChamsBool;
-            set
-            {
-                if (value != _drawItemChamsBool)
-                {
-                    _drawItemChamsBool = value;
-
-                    if (!value)
-                    {
-                        foreach (var kvp in itemOriginalMaterials)
-                        {
-                            if (kvp.Key != null)
-                                kvp.Key.materials = kvp.Value;
-                        }
-                        itemOriginalMaterials.Clear();
-                    }
-                }
-            }
-        }
+        public static bool drawItemChamsBool = false;
         public static int minItemValue = 0;
         public static int maxItemValue = 50000;
         public static float maxItemEspDistance = 1000f;
@@ -109,35 +89,7 @@ namespace dark_cheat
         private static FieldInfo _levelAnimationStartedField =
             typeof(LoadingUI).GetField("levelAnimationStarted", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        private static bool _drawChamsBool = false;
-        public static bool drawChamsBool
-        {
-            get => _drawChamsBool;
-            set
-            {
-                if (value != _drawChamsBool)
-                {
-                    _drawChamsBool = value;
-
-                    if (!value)
-                    {
-                        foreach (var kvp in enemyOriginalMaterials)
-                        {
-                            if (kvp.Key != null)
-                                kvp.Key.materials = kvp.Value;
-                        }
-                        enemyOriginalMaterials.Clear();
-
-                        if (cachedOriginalCamera)
-                        {
-                            cachedCamera.farClipPlane = originalFarClipPlane;
-                            cachedCamera.depthTextureMode = originalDepthTextureMode;
-                            cachedCamera.useOcclusionCulling = originalOcclusionCulling;
-                        }
-                    }
-                }
-            }
-        }
+        public static bool drawChamsBool = false;
 
         public class PlayerData
         {
@@ -778,9 +730,6 @@ namespace dark_cheat
                 lastUpdateTime = currentTime;
             }
 
-            frameCounter++;
-            if (frameCounter % 2 != 0) return;
-
             if (cachedCamera == null || cachedCamera != Camera.main)
             {
                 cachedCamera = Camera.main;
@@ -860,8 +809,10 @@ namespace dark_cheat
                 if (itemVisibleMaterial) itemVisibleMaterial.SetColor("_Color", itemVisibleColor);
             }
 
-            if (drawChamsBool)
+            if (drawEspBool && drawChamsBool)
             {
+
+                // === Camera Config for Chams ===
                 Camera mainCamera = Camera.main;
                 if (mainCamera != null)
                 {
@@ -878,11 +829,17 @@ namespace dark_cheat
                     mainCamera.useOcclusionCulling = false;
                 }
 
+                // === Cleanup invalid entries ===
+                enemyList.RemoveAll(e => e == null || !e.gameObject.activeInHierarchy || e.CenterTransform == null);
+
+                // === Apply Chams Materials ===
                 foreach (var enemyInstance in enemyList)
                 {
                     if (enemyInstance == null || !enemyInstance.gameObject.activeInHierarchy || enemyInstance.CenterTransform == null) continue;
 
                     var enemyParent = enemyInstance.GetComponentInParent(Type.GetType("EnemyParent, Assembly-CSharp"));
+                    if (enemyParent == null) continue;
+
                     var renderers = enemyParent.GetComponentsInChildren<Renderer>(true);
                     foreach (var renderer in renderers)
                     {
@@ -890,16 +847,68 @@ namespace dark_cheat
 
                         if (!enemyOriginalMaterials.ContainsKey(renderer))
                         {
-                            enemyOriginalMaterials[renderer] = renderer.materials;
+                            try
+                            {
+                                enemyOriginalMaterials[renderer] = renderer.materials;
+                            }
+                            catch
+                            {
+                                continue;
+                            }
                         }
 
-                        renderer.materials = new Material[] { hiddenMaterial, visibleMaterial };
+                        try
+                        {
+                            renderer.materials = new Material[] { hiddenMaterial, visibleMaterial };
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogWarning($"[EnemyChams] Failed to apply chams to {renderer.name}: {e.Message}");
+                        }
                     }
                 }
             }
+            else
+            {
+                // === Restore Materials ===
+                foreach (var kvp in enemyOriginalMaterials.ToList())
+                {
+                    if (kvp.Key == null)
+                    {
+                        enemyOriginalMaterials.Remove(kvp.Key);
+                        continue;
+                    }
+
+                    try
+                    {
+                        kvp.Key.materials = kvp.Value;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"[EnemyChams] Failed to restore materials: {e.Message}");
+                    }
+                }
+
+                enemyOriginalMaterials.Clear();
+
+                // === Restore Camera Settings ===
+                if (cachedOriginalCamera)
+                {
+                    Camera mainCamera = Camera.main;
+                    if (mainCamera != null)
+                    {
+                        mainCamera.farClipPlane = originalFarClipPlane;
+                        mainCamera.depthTextureMode = originalDepthTextureMode;
+                        mainCamera.useOcclusionCulling = originalOcclusionCulling;
+                    }
+
+                    cachedOriginalCamera = false;
+                }
+            }
+
 
             // === ITEM CHAMS ===
-            if (drawItemChamsBool)
+            if (drawItemEspBool && drawItemChamsBool)
             {
                 foreach (var valuableObject in valuableObjects)
                 {
@@ -914,14 +923,11 @@ namespace dark_cheat
                         if (renderer == null || !renderer.gameObject.activeInHierarchy) continue;
 
                         if (!itemOriginalMaterials.ContainsKey(renderer))
-                        {
                             itemOriginalMaterials[renderer] = renderer.materials;
-                        }
 
                         renderer.materials = new Material[] { itemHiddenMaterial, itemVisibleMaterial };
                     }
                 }
-
 
                 Camera mainCamera = Camera.main;
                 if (mainCamera != null)
@@ -935,19 +941,50 @@ namespace dark_cheat
                     }
 
                     mainCamera.farClipPlane = 500f;
-
                     mainCamera.depthTextureMode = DepthTextureMode.None;
-
                     mainCamera.useOcclusionCulling = false;
                 }
+            }
+            else
+            {
+                // Cleanup: Restore original materials if chams or esp is off
+                foreach (var kvp in itemOriginalMaterials)
+                {
+                    if (kvp.Key != null)
+                        kvp.Key.materials = kvp.Value;
+                }
+                itemOriginalMaterials.Clear();
 
+                if (cachedOriginalCamera && cachedCamera != null)
+                {
+                    cachedCamera.farClipPlane = originalFarClipPlane;
+                    cachedCamera.depthTextureMode = originalDepthTextureMode;
+                    cachedCamera.useOcclusionCulling = originalOcclusionCulling;
+                }
             }
 
             if (drawEspBool)
             {
+                // Clean up broken/destroyed enemy instances
+                enemyList.RemoveAll(enemyInstance =>
+                {
+                    try
+                    {
+                        // Check for null or destroyed objects.
+                        return enemyInstance == null ||
+                               enemyInstance.gameObject == null ||
+                               enemyInstance.CenterTransform == null;
+                    }
+                    catch
+                    {
+                        return true;
+                    }
+                });
+
                 foreach (var enemyInstance in enemyList)
                 {
-                    if (enemyInstance == null || !enemyInstance.gameObject.activeInHierarchy || enemyInstance.CenterTransform == null) continue;
+                    if (enemyInstance == null || !enemyInstance.gameObject.activeInHierarchy || enemyInstance.CenterTransform == null)
+                        continue;
 
                     Vector3 footPosition = enemyInstance.transform.position;
                     float enemyHeightEstimate = 2f;
@@ -989,7 +1026,7 @@ namespace dark_cheat
                             var nameField = enemyParent.GetType().GetField("enemyName", BindingFlags.Public | BindingFlags.Instance);
                             enemyName = nameField?.GetValue(enemyParent) as string ?? "Enemy";
                         }
-                        
+
                         string healthText = "";
                         if (showEnemyHP && enemyHealthCache.ContainsKey(enemyInstance))
                         {
@@ -1013,17 +1050,19 @@ namespace dark_cheat
 
                         float labelHeight = enemyStyle.CalcHeight(new GUIContent(fullText), labelWidth);
                         float labelY = y - height - labelHeight;
-                        
+
                         // Calculate height for health text if shown
                         float healthLabelHeight = 0f;
-                        if (showEnemyHP && !string.IsNullOrEmpty(healthText)) {
+                        if (showEnemyHP && !string.IsNullOrEmpty(healthText))
+                        {
                             healthLabelHeight = healthStyle.CalcHeight(new GUIContent(healthText), labelWidth);
                         }
 
                         GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), fullText, enemyStyle);
-                        
+
                         // Display health text if enabled
-                        if (showEnemyHP && !string.IsNullOrEmpty(healthText)) {
+                        if (showEnemyHP && !string.IsNullOrEmpty(healthText))
+                        {
                             GUI.Label(new Rect(labelX, labelY - healthLabelHeight, labelWidth, healthLabelHeight), healthText, healthStyle);
                         }
                     }
@@ -1032,19 +1071,44 @@ namespace dark_cheat
 
             if (drawItemEspBool)
             {
+                // Clean up broken/destroyed items
+                valuableObjects.RemoveAll(item =>
+                {
+                    try
+                    {
+                        return item == null || (item is UnityEngine.Object unityObj && unityObj == null);
+                    }
+                    catch { return true; }
+                });
+
                 foreach (var valuableObject in valuableObjects)
                 {
                     if (valuableObject == null) continue;
+
                     bool isPlayerDeathHead = valuableObject.GetType().Name == "PlayerDeathHead";
                     if (!DebugCheats.showPlayerDeathHeads && isPlayerDeathHead) continue;
-                    var transform = valuableObject.GetType().GetProperty("transform", BindingFlags.Public | BindingFlags.Instance)?.GetValue(valuableObject) as Transform;
+
+                    // Safe transform access
+                    Transform transform = null;
+                    try
+                    {
+                        transform = valuableObject?.GetType()?.GetProperty("transform", BindingFlags.Public | BindingFlags.Instance)?.GetValue(valuableObject) as Transform;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"[ESP] Failed to get transform from valuableObject: {e.Message}");
+                        continue;
+                    }
+
                     if (transform == null || !transform.gameObject.activeInHierarchy) continue;
+
                     Vector3 itemPosition = transform.position;
                     float itemDistance = 0f;
+
                     if (localPlayer != null)
                     {
                         itemDistance = Vector3.Distance(localPlayer.transform.position, itemPosition);
-                        if (itemDistance > DebugCheats.maxItemEspDistance) continue; // Skip items beyond the max distance
+                        if (itemDistance > DebugCheats.maxItemEspDistance) continue;
                     }
 
                     if (!isPlayerDeathHead && DebugCheats.showItemValue)
@@ -1056,14 +1120,12 @@ namespace dark_cheat
                             try
                             {
                                 itemValue = Convert.ToInt32(valueField.GetValue(valuableObject));
-
-                                // Skip items below the minimum value
                                 if (itemValue < DebugCheats.minItemValue)
                                     continue;
                             }
                             catch (Exception e)
                             {
-                                DLog.Log($"Error reading 'dollarValueCurrent': {e.Message}. Defaulting to 0.");
+                                Debug.Log($"Error reading 'dollarValueCurrent': {e.Message}. Defaulting to 0.");
                             }
                         }
                     }
@@ -1098,17 +1160,13 @@ namespace dark_cheat
                             catch (Exception e)
                             {
                                 itemName = (valuableObject as UnityEngine.Object)?.name ?? "Unknown";
-                                DLog.Log($"Error accessing item 'name': {e.Message}. Using GameObject name: {itemName}");
+                                Debug.Log($"Error accessing item 'name': {e.Message}. Using GameObject name: {itemName}");
                             }
 
                             if (itemName.StartsWith("Valuable", StringComparison.OrdinalIgnoreCase))
-                            {
                                 itemName = itemName.Substring("Valuable".Length).Trim();
-                            }
                             if (itemName.EndsWith("(Clone)", StringComparison.OrdinalIgnoreCase))
-                            {
                                 itemName = itemName.Substring(0, itemName.Length - "(Clone)".Length).Trim();
-                            }
                         }
 
                         int itemValue = 0;
@@ -1123,12 +1181,11 @@ namespace dark_cheat
                                 }
                                 catch (Exception e)
                                 {
-                                    DLog.Log($"Error reading 'dollarValueCurrent' for '{itemName}': {e.Message}. Defaulting to 0.");
+                                    Debug.Log($"Error reading 'dollarValueCurrent' for '{itemName}': {e.Message}. Defaulting to 0.");
                                 }
                             }
                         }
 
-                        // Set distance color
                         Color distanceColor = isPlayerDeathHead ? Color.red : Color.yellow;
                         nameStyle.normal.textColor = distanceColor;
 
@@ -1149,19 +1206,12 @@ namespace dark_cheat
                         float labelX = x - labelWidth / 2f;
                         float labelY = y - totalHeight - 5f;
 
-                        // Draw Name (with distance included in the same label)
                         if (!string.IsNullOrEmpty(nameText))
-                        {
                             GUI.Label(new Rect(labelX, labelY, labelWidth, nameLabelHeight), nameText, nameStyle);
-                        }
 
-                        // Draw Item Value (if not DeadPlayerHead)
                         if (showItemValue && !isPlayerDeathHead)
-                        {
                             GUI.Label(new Rect(labelX, labelY + nameLabelHeight + 2f, labelWidth, valueLabelHeight), itemValue.ToString() + "$", valueStyle);
-                        }
 
-                        // Draw 3D Item ESP if enabled
                         if (draw3DItemEspBool)
                         {
                             Bounds bounds = GetActiveColliderBounds(transform.gameObject);
@@ -1175,6 +1225,16 @@ namespace dark_cheat
 
             if (drawExtractionPointEspBool)
             {
+                // Clean up broken or destroyed extraction points
+                extractionPointList.RemoveAll(ep =>
+                {
+                    try
+                    {
+                        return ep == null || ep.ExtractionPoint == null || (ep.ExtractionPoint is UnityEngine.Object unityObj && unityObj == null) || !ep.ExtractionPoint.gameObject.activeInHierarchy;
+                    }
+                    catch { return true; }
+                });
+
                 foreach (var epData in extractionPointList)
                 {
                     if (epData.ExtractionPoint == null || !epData.ExtractionPoint.gameObject.activeInHierarchy) continue;
@@ -1188,16 +1248,21 @@ namespace dark_cheat
 
                         string pointName = "Extraction Point";
                         string stateText = $" ({epData.CachedState})";
-                        string distanceText = showExtractionDistance && localPlayer != null ? $"[{Vector3.Distance(localPlayer.transform.position, epData.CachedPosition):F1}m]" : "";
+                        string distanceText = showExtractionDistance && localPlayer != null
+                            ? $"{Vector3.Distance(localPlayer.transform.position, epData.CachedPosition):F1}m"
+                            : "";
 
                         Color originalColor = nameStyle.normal.textColor;
 
-                        nameStyle.normal.textColor = epData.CachedState == "Active" ? Color.green : (epData.CachedState == "Idle" ? Color.red : Color.cyan);
+                        // Set color based on state
+                        nameStyle.normal.textColor =
+                            epData.CachedState == "Active" ? Color.green :
+                            epData.CachedState == "Idle" ? Color.red : Color.cyan;
 
                         string nameFullText = showExtractionNames ? pointName + stateText : "";
                         if (showExtractionDistance) nameFullText += " " + distanceText;
 
-                        float labelWidth = 200f;
+                        float labelWidth = 150f;
                         float nameLabelHeight = nameStyle.CalcHeight(new GUIContent(nameFullText), labelWidth);
                         float totalHeight = nameLabelHeight;
                         float labelX = x - labelWidth / 2f;
@@ -1209,13 +1274,27 @@ namespace dark_cheat
                         }
 
                         nameStyle.normal.textColor = originalColor;
-
                     }
                 }
             }
 
             if (drawPlayerEspBool)
             {
+                // Clean up broken or inactive player entries
+                playerDataList.RemoveAll(player =>
+                {
+                    try
+                    {
+                        return player == null ||
+                               player.Transform == null ||
+                               player.Transform.gameObject == null ||
+                               !player.Transform.gameObject.activeInHierarchy;
+                    }
+                    catch
+                    {
+                        return true;
+                    }
+                });
 
                 foreach (var playerData in playerDataList)
                 {
@@ -1224,7 +1303,8 @@ namespace dark_cheat
                     {
                         isLocalPlayer = true;
                     }
-                    if (playerData.PhotonView == null || (playerData.PhotonView.IsMine && PhotonNetwork.IsConnected) || isLocalPlayer || !playerData.Transform.gameObject.activeInHierarchy) continue;
+
+                    if (playerData.PhotonView == null || (playerData.PhotonView.IsMine && PhotonNetwork.IsConnected) || isLocalPlayer) continue;
 
                     Vector3 playerPos = playerData.Transform.position;
                     float distanceToPlayer = localPlayer != null ? Vector3.Distance(localPlayer.transform.position, playerPos) : float.MaxValue;
@@ -1237,7 +1317,6 @@ namespace dark_cheat
                     Vector3 screenFootPos = cachedCamera.WorldToScreenPoint(footPosition);
                     Vector3 screenHeadPos = cachedCamera.WorldToScreenPoint(headPosition);
                     bool isInFront = screenFootPos.z > 0 && screenHeadPos.z > 0;
-
                     if (!isInFront) continue;
 
                     float footX = screenFootPos.x * scaleX;
@@ -1268,48 +1347,29 @@ namespace dark_cheat
                     nameStyle.normal.textColor = Color.white;
 
                     int health = playerHealthCache.ContainsKey(playerData.PhotonView.ViewID) ? playerHealthCache[playerData.PhotonView.ViewID] : 100;
-                    string healthText = "";
-                    if (showPlayerHP)
-                    {
-                        int maxHealth = Players.GetPlayerMaxHealth(playerData.PlayerObject);
-                        float healthPercentage = maxHealth > 0 ? (float)health / maxHealth : 0f;
-                        healthText = health >= 0 ? $"HP: {health}/{maxHealth}" : "";
-                        healthStyle.normal.textColor = healthPercentage > 0.66f ? Color.green : (healthPercentage > 0.33f ? Color.yellow : Color.red);
-                    }
-                    
-                    string distanceText = "";
-                    if (showPlayerDistance && localPlayer != null)
-                        distanceText = $" [{distanceToPlayer:F1}m]";
+                    string healthText = $"HP: {health}";
+                    string distanceText = showPlayerDistance && localPlayer != null ? $"{distanceToPlayer:F1}m" : "";
 
                     string nameFullText = showPlayerNames ? playerData.Name : "";
-                    if (showPlayerDistance) nameFullText += distanceText;
+                    if (showPlayerDistance) nameFullText += " " + distanceText;
 
-                    float labelWidth = 200f;
+                    float labelWidth = 150f;
                     float nameHeight = nameStyle.CalcHeight(new GUIContent(nameFullText), labelWidth);
                     float healthHeight = healthStyle.CalcHeight(new GUIContent(healthText), labelWidth);
-                    float totalHeight = nameHeight;
+                    float totalHeight = nameHeight + (showPlayerHP ? healthHeight + 2f : 0f);
                     float labelX = footX - labelWidth / 2f;
                     float labelY = footY - height - totalHeight - 10f;
-                    
-                    // Calculate height for health text if shown
-                    float healthLabelY = labelY;
-                    if (showPlayerHP && !string.IsNullOrEmpty(healthText)) {
-                        healthLabelY = labelY - healthHeight;
-                    }
 
                     if (!string.IsNullOrEmpty(nameFullText))
                     {
                         GUI.Label(new Rect(labelX, labelY, labelWidth, nameHeight), nameFullText, nameStyle);
                     }
-                    
-                    // Display health text if enabled
-                    if (showPlayerHP && !string.IsNullOrEmpty(healthText))
+                    if (showPlayerHP)
                     {
-                        GUI.Label(new Rect(labelX, healthLabelY, labelWidth, healthHeight), healthText, healthStyle);
+                        GUI.Label(new Rect(labelX, labelY + nameHeight + 2f, labelWidth, healthHeight), healthText, healthStyle);
                     }
 
                     nameStyle.normal.textColor = originalNameColor;
-
                 }
             }
         }

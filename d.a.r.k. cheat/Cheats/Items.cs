@@ -27,31 +27,56 @@ namespace dark_cheat
         {
             if (selectedItem == null || selectedItem.ItemObject == null)
             {
-                DLog.Log("Error: Selected item or ItemObject is null!");
+                Debug.Log("Error: Selected item or ItemObject is null!");
                 return;
             }
 
             try
             {
-                var itemType = selectedItem.ItemObject.GetType();
-
-                var valueField = itemType.GetField("dollarValueCurrent", BindingFlags.Public | BindingFlags.Instance);
-
-
-                if (valueField == null)
+                // Cast the ItemObject to a UnityEngine.Object.
+                UnityEngine.Object uObj = selectedItem.ItemObject as UnityEngine.Object;
+                if (uObj == null)
                 {
-                    DLog.Log($"Error: Could not find 'dollarValueCurrent' field in {selectedItem.Name}");
+                    Debug.Log("Error: ItemObject is not a UnityEngine.Object!");
                     return;
                 }
 
-                valueField.SetValue(selectedItem.ItemObject, newValue);
-                selectedItem.Value = newValue;
+                // Obtain the GameObject from the UnityEngine.Object.
+                GameObject go = (uObj as GameObject) ?? ((uObj as Component)?.gameObject);
+                if (go == null)
+                {
+                    Debug.Log("Error: Could not obtain GameObject from ItemObject!");
+                    return;
+                }
 
-                DLog.Log($"Successfully set '{selectedItem.Name}' value to ${newValue}");
+                // Try to get the PhotonView on the GameObject.
+                PhotonView pv = go.GetComponent<PhotonView>();
+                if (pv != null)
+                {
+                    // Call the RPC to update the value on all clients.
+                    pv.RPC("DollarValueSetRPC", RpcTarget.AllBuffered, (float)newValue);
+                    Debug.Log($"Successfully set '{selectedItem.Name}' value to ${newValue} via RPC");
+                }
+                else
+                {
+                    // Fallback: if no PhotonView is found, set the field directly.
+                    var itemType = selectedItem.ItemObject.GetType();
+                    var valueField = itemType.GetField("dollarValueCurrent", BindingFlags.Public | BindingFlags.Instance);
+                    if (valueField == null)
+                    {
+                        Debug.Log($"Error: Could not find 'dollarValueCurrent' field in {selectedItem.Name}");
+                        return;
+                    }
+                    valueField.SetValue(selectedItem.ItemObject, newValue);
+                    Debug.Log($"Successfully set '{selectedItem.Name}' value to ${newValue} locally (no PhotonView found)");
+                }
+
+                // Update the GameItem's cached value.
+                selectedItem.Value = newValue;
             }
             catch (Exception e)
             {
-                DLog.Log($"Error setting value for '{selectedItem.Name}': {e.Message}");
+                Debug.Log($"Error setting value for '{selectedItem.Name}': {e.Message}");
             }
         }
         private static PhotonView punManagerPhotonView;
@@ -213,13 +238,17 @@ namespace dark_cheat
                 GameObject player = DebugCheats.GetLocalPlayer();
                 if (player == null)
                 {
-                    DLog.Log("Local player not found!");
+                    Debug.Log("Local player not found!");
                     return;
                 }
 
+                // Calculate target position and rotation.
                 Vector3 targetPosition = player.transform.position + player.transform.forward * 1f + Vector3.up * 1.5f;
-                DLog.Log($"Target position for teleport of '{item.Name}': {targetPosition}");
+                Quaternion targetRotation = player.transform.rotation; // or Quaternion.identity, depending on your needs
 
+                Debug.Log($"Target position for teleport of '{item.Name}': {targetPosition}");
+
+                // Get the item's Transform.
                 Transform itemTransform = null;
                 var itemObjectType = item.ItemObject.GetType();
                 var transformProperty = itemObjectType.GetProperty("transform", BindingFlags.Public | BindingFlags.Instance);
@@ -238,69 +267,79 @@ namespace dark_cheat
 
                 if (itemTransform == null)
                 {
-                    DLog.Log($"Could not get Transform of item '{item.Name}'!");
+                    Debug.Log($"Could not get Transform of item '{item.Name}'!");
                     return;
                 }
 
+                // Try to get the PhotonView from the item.
                 PhotonView itemPhotonView = itemTransform.GetComponent<PhotonView>();
                 if (itemPhotonView == null)
                 {
-                    DLog.Log($"Item '{item.Name}' has no PhotonView, local teleport only.");
+                    Debug.Log($"Item '{item.Name}' has no PhotonView, performing local teleport only.");
                     itemTransform.position = targetPosition;
+                    itemTransform.rotation = targetRotation;
                     return;
                 }
 
+                // If connected, request ownership if needed.
                 if (PhotonNetwork.IsConnected && !itemPhotonView.IsMine)
                 {
                     itemPhotonView.RequestOwnership();
-                    DLog.Log($"Requested ownership of item '{item.Name}' (ViewID: {itemPhotonView.ViewID})");
+                    Debug.Log($"Requested ownership of item '{item.Name}' (ViewID: {itemPhotonView.ViewID})");
                 }
 
+                // Optionally disable any automatic transform syncing.
                 var transformView = itemTransform.GetComponent<PhotonTransformView>();
                 bool wasTransformViewActive = false;
-
                 if (transformView != null && transformView.enabled)
                 {
                     wasTransformViewActive = true;
                     transformView.enabled = false;
-                    DLog.Log($"PhotonTransformView temporarily disabled on item '{item.Name}'");
+                    Debug.Log($"PhotonTransformView temporarily disabled on item '{item.Name}'");
                 }
 
+                // Disable the Rigidbody if present.
                 Rigidbody rb = itemTransform.GetComponent<Rigidbody>();
                 bool wasRbActive = false;
                 if (rb != null)
                 {
                     wasRbActive = !rb.isKinematic;
                     rb.isKinematic = true;
-                    DLog.Log($"Rigidbody of item '{item.Name}' temporarily disabled");
+                    Debug.Log($"Rigidbody of item '{item.Name}' temporarily disabled");
                 }
 
+                // Perform the local teleport.
                 itemTransform.position = targetPosition;
-                DLog.Log($"Item '{item.Name}' locally teleported to {targetPosition}");
-                Vector3 currentPosition = itemTransform.position;
-                DLog.Log($"Current position of item '{item.Name}' after teleport: {currentPosition}");
+                itemTransform.rotation = targetRotation;
+                Debug.Log($"Item '{item.Name}' locally teleported to {targetPosition}");
+
+                // Call the RPC on all clients.
                 if (PhotonNetwork.IsConnected && itemPhotonView != null)
                 {
-                    itemPhotonView.RPC("TeleportItemRPC", RpcTarget.AllBuffered, targetPosition);
-                    DLog.Log($"Sent RPC 'TeleportItemRPC' to all for item '{item.Name}'");
+                    itemPhotonView.RPC("SetPositionRPC", RpcTarget.AllBuffered, targetPosition, targetRotation);
+                    Debug.Log($"Sent RPC 'SetPositionRPC' to all for item '{item.Name}'");
                 }
+
+                // Re-enable syncing after a delay, if necessary.
                 if (wasTransformViewActive || wasRbActive)
                 {
                     itemTransform.gameObject.AddComponent<DelayedPhysicsReset>().Setup(rb, transformView);
                 }
+
+                // Optionally force a refresh of the item by toggling its active state.
                 var itemGO = itemTransform.gameObject;
                 if (itemGO != null)
                 {
                     itemGO.SetActive(false);
                     itemGO.SetActive(true);
-                    DLog.Log($"Item '{item.Name}' reactivated to force rendering.");
+                    Debug.Log($"Item '{item.Name}' reactivated to force rendering.");
                 }
 
-                DLog.Log($"Teleport of item '{item.Name}' completed.");
+                Debug.Log($"Teleport of item '{item.Name}' completed.");
             }
             catch (Exception e)
             {
-                DLog.Log($"Error teleporting item '{item.Name}': {e.Message}");
+                Debug.Log($"Error teleporting item '{item.Name}': {e.Message}");
             }
         }
     }

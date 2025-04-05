@@ -1,4 +1,7 @@
 ﻿using HarmonyLib;
+using Photon.Pun;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -41,6 +44,48 @@ namespace dark_cheat
             static bool Prefix(int button, ref bool __result)
             {
                 if (Hax2.showMenu) { __result = false; return false; }
+                return true;
+            }
+        }
+
+        //Patch interaction with items, doors, players when menu is open
+        [HarmonyPatch(typeof(PhysGrabber), "RayCheck")]
+        public class Patch_PhysGrabber_RayCheck
+        {
+            static bool Prefix(bool _grab)
+            {
+                if (Hax2.showMenu)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerAvatar), "AddToStatsManager")]
+        public class Patch_AddToStatsManager
+        {
+            static bool Prefix(PlayerAvatar __instance)
+            {
+                if (Hax2.spoofNameActive)
+                {
+                    string fakeName = Hax2.persistentNameText;
+                    string fakeSteamId = "765611472644157498";
+
+                    if (GameManager.Multiplayer())
+                    {
+                        if (__instance.photonView.IsMine)
+                        {
+                            __instance.photonView.RPC("AddToStatsManagerRPC", RpcTarget.AllBuffered, new object[] { fakeName, fakeSteamId });
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        __instance.AddToStatsManagerRPC(fakeName, fakeSteamId);
+                        return false;
+                    }
+                }
                 return true;
             }
         }
@@ -139,6 +184,67 @@ namespace dark_cheat
 
                     return true;
                 }
+            }
+        }
+
+        // Remove the annoying truck engine at main menu
+        [HarmonyPatch(typeof(Sound), "PlayLoop")]
+        class BlockMenuTruckLoop_PlayLoop
+        {
+            static bool Prefix(object __instance, ref bool playing)
+            {
+                var sourceField = AccessTools.Field(__instance.GetType(), "Source");
+                AudioSource source = sourceField.GetValue(__instance) as AudioSource;
+
+                if (source?.clip != null && source.clip.name == "menu truck engine loop")
+                {
+                    source.Stop();
+                    source.clip = null;
+                    playing = false;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(AudioSource), "Play", new Type[0])]
+        class BlockMultipleMenuSounds_Play
+        {
+            static readonly HashSet<string> BlockedClipNames = new HashSet<string>
+            {
+                "menu truck engine loop",
+                "Ambience Loop Truck Driving",
+                "msc main menu",
+                "menu truck fire pass",
+                "menu truck fire pass swerve01",
+                "menu truck body rustle long01",
+                "menu truck fire pass swerve02",
+                "menu truck body rustle long02",
+                "menu truck skeleton hit",
+                "menu truck body rustle long03",
+                "menu truck skeleton hit skull",
+                "menu truck body rustle short02",
+                "menu truck swerve fast01",
+                "menu truck swerve fast02",
+                "menu truck swerve",
+                "menu truck speed up",
+                "menu truck slow down"
+            };
+
+            static bool Prefix(AudioSource __instance)
+            {
+                if (__instance?.clip != null)
+                {
+                    string name = __instance.clip.name;
+
+                    if (BlockedClipNames.Contains(name))
+                    {
+                        return false; // Block
+                    }
+                }
+
+                return true; // Allow
             }
         }
     }

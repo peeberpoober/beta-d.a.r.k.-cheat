@@ -12,7 +12,7 @@ namespace dark_cheat
         private static float previousFarClip = 0f;
         public static bool NoFogEnabled = false;
 
-        public static void ToggleNoFog(bool enable)
+        public static void ToggleNoFog()
         {
             Camera cam = Camera.main;
             if (cam == null)
@@ -21,14 +21,13 @@ namespace dark_cheat
                 return;
             }
 
-            if (enable)
+            if (NoFogEnabled)
             {
                 if (previousFarClip == 0f)
                     previousFarClip = cam.farClipPlane;
 
                 cam.farClipPlane = 500f;
                 RenderSettings.fog = false;
-                NoFogEnabled = true;
                 DLog.Log("NoFog enabled");
             }
             else
@@ -36,7 +35,6 @@ namespace dark_cheat
                 if (previousFarClip > 0f)
                     cam.farClipPlane = previousFarClip;
                 RenderSettings.fog = true;
-                NoFogEnabled = false;
                 DLog.Log("NoFog disabled");
             }
         }
@@ -140,6 +138,58 @@ namespace dark_cheat
             catch (Exception e)
             {
                 Debug.Log($"Error crashing {Hax2.playerNames[Hax2.selectedPlayerIndex]}: {e.Message}");
+            }
+        }
+
+        public static void ForceActivateAllExtractionPoints()
+        {
+            try
+            {
+                var roundDirector = RoundDirector.instance;
+                if (roundDirector == null)
+                {
+                    Debug.LogError("[ForceActivate] RoundDirector instance not found.");
+                    return;
+                }
+
+                var photonViewField = typeof(RoundDirector).GetField("photonView", BindingFlags.NonPublic | BindingFlags.Instance);
+                var photonView = photonViewField?.GetValue(roundDirector) as PhotonView;
+
+                if (photonView == null)
+                {
+                    Debug.LogError("[ForceActivate] photonView not found on RoundDirector.");
+                    return;
+                }
+
+                var extractionPointsField = typeof(RoundDirector).GetField("extractionPointList", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (extractionPointsField == null)
+                {
+                    Debug.LogError("[ForceActivate] extractionPointList field not found.");
+                    return;
+                }
+
+                var extractionList = extractionPointsField.GetValue(roundDirector) as List<GameObject>;
+                if (extractionList == null)
+                {
+                    Debug.LogError("[ForceActivate] extractionPointList is null or invalid.");
+                    return;
+                }
+
+                foreach (var point in extractionList)
+                {
+                    if (point == null || !point.activeInHierarchy) continue;
+
+                    var view = point.GetComponent<PhotonView>();
+                    if (view != null)
+                    {
+                        photonView.RPC("ExtractionPointActivateRPC", RpcTarget.All, view.ViewID);
+                        Debug.Log($"[ForceActivate] Activated extraction point: {point.name}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ForceActivate] Exception occurred: {ex.Message}");
             }
         }
     }
