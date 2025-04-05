@@ -69,11 +69,9 @@ namespace dark_cheat
             {
                 if (Hax2.spoofNameActive)
                 {
-                    // Define your fake values here.
                     string fakeName = Hax2.persistentNameText;
                     string fakeSteamId = "765611472644157498";
 
-                    // Branch based on multiplayer mode.
                     if (GameManager.Multiplayer())
                     {
                         if (__instance.photonView.IsMine)

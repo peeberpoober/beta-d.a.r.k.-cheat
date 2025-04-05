@@ -1570,6 +1570,8 @@ namespace dark_cheat
                     }
                 }
             }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Activate All Extraction Points", buttonStyle)) MiscFeatures.ForceActivateAllExtractionPoints();
 
             GUILayout.Space(10);
             GUILayout.Label("Map Tweaks (can't be undone in level):", sectionHeaderStyle);
@@ -2634,8 +2636,25 @@ namespace dark_cheat
             float handleSize = 16f;
             Rect resizeHandleRect = new Rect(menuRect.xMax - handleSize, menuRect.yMax - handleSize, handleSize, handleSize);
 
-            GUI.Box(resizeHandleRect, "", GUI.skin.box);
+            // Ultra-bright orange
+            bool isHovering = resizeHandleRect.Contains(Event.current.mousePosition);
+            UnityEngine.Color brightOrange = new UnityEngine.Color(1f, 0.7f, 0.2f, 1f);     // Bright default
+            UnityEngine.Color brighterOrange = new UnityEngine.Color(1f, 0.9f, 0.4f, 1f);   // On hover
 
+            GUI.color = isHovering ? brighterOrange : brightOrange;
+            GUI.DrawTexture(resizeHandleRect, Texture2D.whiteTexture);
+            GUI.color = UnityEngine.Color.white;
+
+            var labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = UnityEngine.Color.white }
+            };
+            GUI.Label(resizeHandleRect, "⧗", labelStyle);
+
+            // Handle resizing logic
             if (Event.current.type == EventType.MouseDown && resizeHandleRect.Contains(Event.current.mousePosition))
             {
                 isResizing = true;
@@ -2649,11 +2668,11 @@ namespace dark_cheat
                 if (Event.current.type == EventType.MouseDrag)
                 {
                     Vector2 offset = Event.current.mousePosition - resizeStartMousePos;
-                    menuRect.width = Mathf.Clamp(resizeStartSize.x + offset.x, 400, 1200);
-                    menuRect.height = Mathf.Clamp(resizeStartSize.y + offset.y, 300, 1000);
+                    menuRect.width = Mathf.Clamp(resizeStartSize.x + offset.x, 400f, 1200f);
+                    menuRect.height = Mathf.Clamp(resizeStartSize.y + offset.y, 300f, 1000f);
                     Event.current.Use();
                 }
-                if (Event.current.type == EventType.MouseUp)
+                else if (Event.current.type == EventType.MouseUp || Event.current.rawType == EventType.MouseUp)
                 {
                     isResizing = false;
                     Event.current.Use();
