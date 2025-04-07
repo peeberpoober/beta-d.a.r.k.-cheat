@@ -141,5 +141,4 @@
 - Take/Give Host (?)
 - Change Damage
 - Complete Mission
-- Bypass Extraction Lock
 - No Item Damage
