@@ -915,6 +915,23 @@ namespace dark_cheat
             ToggleLogic("Grab_Guard", " Grab Guard", ref debounce, null);
             GUILayout.Space(5);
 
+            if (GUILayout.Button("Give Crown", buttonStyle))
+            {
+                string crownsteamID = PlayerController.GetLocalPlayerSteamID();
+                var sessionManager = UnityEngine.Object.FindObjectOfType<SessionManager>();
+                PunManager crownPunManager = GameObject.FindObjectOfType<PunManager>();
+                PhotonView crownPunManagerView = crownPunManager.GetComponent<PhotonView>();
+                if (crownPunManagerView != null)
+                {
+                    crownPunManagerView.RPC("CrownPlayerRPC", RpcTarget.AllBuffered, crownsteamID);
+                    Debug.Log("Gave self crown!");
+                }
+                else
+                {
+                    Debug.LogError("PhotonView not found on PunManager GameObject!");
+                }
+            }
+
             ToggleLogic("no_weapon_recoil", " No Weapon Recoil", ref Patches.NoWeaponRecoil._isEnabledForConfig, () => {
                 ConfigManager.SaveToggle("no_weapon_recoil", Patches.NoWeaponRecoil._isEnabledForConfig);
                 PlayerPrefs.Save();
@@ -2027,6 +2044,37 @@ namespace dark_cheat
             }
             GUILayout.Space(40);
 
+            if (GUILayout.Button("Activate Flush/Bubble", buttonStyle))
+            {
+                ToiletFun[] Toilets = GameObject.FindObjectsOfType<ToiletFun>();
+                Cauldron[] Cauldrons = GameObject.FindObjectsOfType<Cauldron>();
+                foreach (ToiletFun Toilet in Toilets)
+                {
+                    PhotonView photonView = Toilet.GetComponent<PhotonView>();
+                    photonView.RPC("FlushStartRPC", RpcTarget.All);
+                }
+                foreach (Cauldron Cauldron in Cauldrons)
+                {
+                    PhotonView photonView = Cauldron.GetComponent<PhotonView>();
+                    photonView.RPC("CookStartRPC", RpcTarget.All);
+                }
+            }
+            GUILayout.Space(5);
+
+            if (GUILayout.Button("Touch Clown Nose", buttonStyle))
+            {
+                ClownTrap[] allClowns = UnityEngine.Object.FindObjectsOfType<ClownTrap>();
+                foreach (var clown in allClowns)
+                {
+                    PhotonView photonView = clown.GetComponent<PhotonView>();
+                    if (photonView != null)
+                    {
+                        photonView.RPC("TouchNoseRPC", RpcTarget.All);
+                    }
+                }
+            }
+            GUILayout.Space(5);
+
             if (GUILayout.Button("Force Glitch", buttonStyle)) { Troll.ForcePlayerGlitch(); }
             GUILayout.Space(5);
 
@@ -2046,6 +2094,15 @@ namespace dark_cheat
             GUILayout.Space(5);
 
             if (GUILayout.Button("Crash Selected Player", buttonStyle)) { MiscFeatures.CrashSelectedPlayerNew(); }
+            GUILayout.Space(5);
+
+            if (GUILayout.Button("Detonate All Explosives", buttonStyle))
+            {
+                var itemMine = UnityEngine.Object.FindObjectOfType<ItemMine>();
+                var itemGrenadeMethod = typeof(ItemGrenade).GetMethod("TickStartRPC", BindingFlags.NonPublic | BindingFlags.Instance);
+                MiscFeatures.ExlploadAll();
+                Debug.Log($"Detonated All Grenades/Mines");
+            }
             GUILayout.Space(5);
 
             if (GUILayout.Button("Crash Lobby", buttonStyle)) 

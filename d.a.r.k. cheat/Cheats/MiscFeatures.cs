@@ -192,5 +192,31 @@ namespace dark_cheat
                 Debug.LogError($"[ForceActivate] Exception occurred: {ex.Message}");
             }
         }
+        public static void ExlploadAll()
+        {
+            ItemGrenade[] allGrenades = UnityEngine.Object.FindObjectsOfType<ItemGrenade>();
+            foreach (var grenade in allGrenades)
+            {
+                var tickStartMethod = typeof(ItemGrenade).GetMethod("TickStartRPC",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+                if (tickStartMethod != null)
+                {
+                    tickStartMethod.Invoke(grenade, new object[] { });
+
+                    var tickEndMethod = typeof(ItemGrenade).GetMethod("TickEndRPC",
+                        BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (tickEndMethod != null)
+                    {
+                        tickEndMethod.Invoke(grenade, new object[] { });
+                    }
+                }
+            }
+            ItemMine[] allMines = UnityEngine.Object.FindObjectsOfType<ItemMine>();
+            foreach (var mine in allMines)
+            {
+                mine.StateSetRPC(4);
+            }
+        }
     }
 }
