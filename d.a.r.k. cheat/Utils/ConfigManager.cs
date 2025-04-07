@@ -1,4 +1,5 @@
 ﻿using dark_cheat;
+using Photon.Pun;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -11,6 +12,11 @@ namespace dark_cheat
         {
             PlayerPrefs.SetInt(key, value ? 1 : 0);
         }
+
+        public static float CurrentSpreadMultiplier = 1.0f;
+
+        public static bool NoWeaponCooldownEnabled = false;
+
 
         public static bool LoadToggle(string key, bool defaultValue = false)
         {
@@ -64,7 +70,8 @@ namespace dark_cheat
             ConfigManager.SaveToggle("rgb_player", playerColor.isRandomizing);
             ConfigManager.SaveToggle("No_Fog", MiscFeatures.NoFogEnabled);
             ConfigManager.SaveToggle("WaterMark_Toggle", Hax2.showWatermark);
-            ConfigManager.SaveToggle("grab_guard", Hax2.debounce);
+            ConfigManager.SaveToggle("no_weapon_recoil", Patches.NoWeaponRecoil._isEnabledForConfig);
+            ConfigManager.SaveToggle("no_weapon_cooldown", NoWeaponCooldownEnabled);
 
             //Sliders
             ConfigManager.SaveFloat("strength", Hax2.sliderValueStrength);
@@ -83,6 +90,7 @@ namespace dark_cheat
             ConfigManager.SaveFloat("flashlight_intensity", Hax2.flashlightIntensity);
             ConfigManager.SaveFloat("field_of_view", Hax2.fieldOfView);
             ConfigManager.SaveFloat("max_item_distance", DebugCheats.maxItemEspDistance);
+            ConfigManager.SaveFloat("weapon_spread_multiplier", CurrentSpreadMultiplier);
             ConfigManager.SaveInt("min_item_value", DebugCheats.minItemValue);
 
             //Visuals Tab
@@ -198,6 +206,12 @@ namespace dark_cheat
 
             // Enemies Tab
             Hax2.blindEnemies = ConfigManager.LoadToggle("blind_enemies", false);
+            if (PhotonNetwork.IsConnected && PhotonNetwork.LocalPlayer != null)
+            {
+                ExitGames.Client.Photon.Hashtable initialProps = new ExitGames.Client.Photon.Hashtable();
+                initialProps["isBlindEnabled"] = Hax2.blindEnemies;
+                PhotonNetwork.LocalPlayer.SetCustomProperties(initialProps);
+            }
         }
     }
 }

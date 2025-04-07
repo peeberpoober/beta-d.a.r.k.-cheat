@@ -913,8 +913,39 @@ namespace dark_cheat
             GUILayout.Space(5);
 
             ToggleLogic("Grab_Guard", " Grab Guard", ref debounce, null);
+            GUILayout.Space(5);
+
+            ToggleLogic("no_weapon_recoil", " No Weapon Recoil", ref Patches.NoWeaponRecoil._isEnabledForConfig, () => {
+                ConfigManager.SaveToggle("no_weapon_recoil", Patches.NoWeaponRecoil._isEnabledForConfig);
+                PlayerPrefs.Save();
+                Debug.Log($"[Self Tab Toggle] Set No Recoil Enabled to: {Patches.NoWeaponRecoil._isEnabledForConfig}");
+            });
             GUILayout.Space(10);
 
+            ToggleLogic("no_weapon_cooldown", " No Weapon Cooldown", ref ConfigManager.NoWeaponCooldownEnabled, () => {
+                ConfigManager.SaveToggle("no_weapon_cooldown", ConfigManager.NoWeaponCooldownEnabled);
+                PlayerPrefs.Save();
+                Debug.Log($"[GUI Toggle] Set No Cooldown Enabled to: {ConfigManager.NoWeaponCooldownEnabled}");
+            });
+
+            GUILayout.Space(10);
+
+            GUILayout.Label($"Spread Multiplier: {ConfigManager.CurrentSpreadMultiplier:F2}x " +
+                            $"({(ConfigManager.CurrentSpreadMultiplier <= 0.01f ? "No Spread" : (Mathf.Approximately(ConfigManager.CurrentSpreadMultiplier, 1f) ? "Normal" : $"{ConfigManager.CurrentSpreadMultiplier * 100:F0}%"))})",
+                            labelStyle);
+
+            float newSpreadMultiplier = GUILayout.HorizontalSlider(ConfigManager.CurrentSpreadMultiplier, 0.0f, 2.0f); // Range 0x to 2x spread
+
+            if (newSpreadMultiplier != ConfigManager.CurrentSpreadMultiplier)
+            {
+                ConfigManager.CurrentSpreadMultiplier = newSpreadMultiplier;
+                ConfigManager.SaveFloat("weapon_spread_multiplier", newSpreadMultiplier);
+                PlayerPrefs.Save();
+                Debug.Log($"[GUI Slider] Set Spread Multiplier to: {newSpreadMultiplier}");
+            }
+            GUILayout.Space(10);
+
+            GUILayout.Label("PLAYER STATS", sectionHeaderStyle);
             GUILayout.Label("Strength: " + Mathf.RoundToInt(sliderValueStrength), labelStyle);
             sliderValueStrength = GUILayout.HorizontalSlider(sliderValueStrength, 1f, 30f, GUILayout.Width(200));
             if (sliderValueStrength != oldSliderValueStrength)
@@ -1681,7 +1712,12 @@ namespace dark_cheat
                 GUILayout.Space(10);
                 if (GUILayout.Button("Kill Enemy", buttonStyle)) Enemies.KillSelectedEnemy(selectedEnemyIndex, enemyList, enemyNames);
                 if (GUILayout.Button("Kill All Enemies", buttonStyle)) Enemies.KillAllEnemies();
-                ToggleLogic("blind_enemies", " Blind Enemies", ref blindEnemies, null);
+                ToggleLogic("blind_enemies", " Blind Enemies", ref blindEnemies, () => {
+                    ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable();
+                    props["isBlindEnabled"] = blindEnemies;
+                    PhotonNetwork.LocalPlayer.SetCustomProperties(props);
+                    ConfigManager.SaveToggle("blind_enemies", blindEnemies);
+                });
 
                 if (GUILayout.Button(showEnemyTeleportUI ? "Hide Teleport Options" : "Teleport Options", buttonStyle))
                 {
