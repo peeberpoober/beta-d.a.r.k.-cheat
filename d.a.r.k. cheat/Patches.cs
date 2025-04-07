@@ -128,6 +128,32 @@ namespace dark_cheat
                 return true;
             }
 
+            [HarmonyPatch(typeof(EnemyThinMan), "SetTarget", new Type[] { typeof(PlayerAvatar) })]
+            public static class EnemyThinMan_SetTarget_Patch
+            {
+                static bool Prefix(EnemyThinMan __instance, PlayerAvatar _player)
+                {
+                    PhotonView enemyView = __instance?.GetComponent<PhotonView>();
+
+                    if (!PhotonNetwork.IsMasterClient && (enemyView == null || !enemyView.IsMine))
+                    {
+                        return true;
+                    }
+
+                    if (_player != null && _player.photonView != null && _player.photonView.Owner != null)
+                    {
+                        Photon.Realtime.Player ownerPlayer = _player.photonView.Owner;
+
+                        if (ownerPlayer.CustomProperties.TryGetValue("isBlindEnabled", out object isBlindEnabledObj) && isBlindEnabledObj is bool && (bool)isBlindEnabledObj)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
             [HarmonyPatch(typeof(EnemyStateInvestigate), nameof(EnemyStateInvestigate.SetRPC))]
             public static class EnemyStateInvestigate_BlindAudio_Patch
             {
