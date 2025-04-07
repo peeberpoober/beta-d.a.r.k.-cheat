@@ -94,8 +94,8 @@
 
 ### Items
 - Item List (sorted by value)
-- **Teleport Item to Me (**Host only**)**
-- **Teleport All Items to Me (**Host only**)**
+- Teleport Item to Me
+- Teleport All Items to Me
 - Item Value Editor
 - Advanced Item Spawner
  - Search Functionality
