@@ -253,6 +253,7 @@ namespace dark_cheat
         private static Texture2D rowBgNormal;
         private static Texture2D rowBgHover;
         private static Texture2D rowBgSelected;
+        public static bool grabThroughWallsEnabled = false;
 
         //TextEditor
         private bool showTextEditorPopup = false;
@@ -960,6 +961,14 @@ namespace dark_cheat
                 PlayerPrefs.Save();
                 Debug.Log($"[GUI Slider] Set Spread Multiplier to: {newSpreadMultiplier}");
             }
+
+            grabThroughWallsEnabled = ToggleLogic("grab_through_walls", " Grab Through Walls", ref grabThroughWallsEnabled, () => {
+                Patches.ToggleGrabThroughWalls(grabThroughWallsEnabled);
+                ConfigManager.SaveToggle("grab_through_walls", grabThroughWallsEnabled);
+                PlayerPrefs.Save();
+                DLog.Log($"[Self Tab Toggle] Set Grab Through Walls to: {grabThroughWallsEnabled}");
+            });
+
             GUILayout.Space(10);
 
             GUILayout.Label("PLAYER STATS", sectionHeaderStyle);
