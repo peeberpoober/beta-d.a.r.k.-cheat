@@ -370,175 +370,74 @@ namespace dark_cheat
         public class GrabThroughWallsPatch
         {
             public static bool enableGrabThroughWalls = false;
+            private static FieldInfo maskField;
             private static LayerMask originalMask;
             private static bool hasStoredOriginalMask = false;
 
             static GrabThroughWallsPatch()
             {
-                ReflectionCache.Initialize();
+                maskField = AccessTools.Field(typeof(PhysGrabber), "mask");
             }
 
             [HarmonyPrefix]
-            public static bool Prefix(PhysGrabber __instance, bool _grab, ref bool __result)
+            public static void Prefix(PhysGrabber __instance, bool _grab)
             {
-                if (!enableGrabThroughWalls) return true;
-                if (!__instance.isLocal) return true;
+                if (!enableGrabThroughWalls || !__instance.isLocal)
+                    return;
+
                 try
                 {
+                    LayerMask currentMask = (LayerMask)maskField.GetValue(__instance);
+
                     if (!hasStoredOriginalMask)
                     {
-                        originalMask = (LayerMask)ReflectionCache.maskField.GetValue(__instance);
+                        originalMask = currentMask;
                         hasStoredOriginalMask = true;
                     }
+
                     if (_grab)
                     {
-                        Camera playerCamera = (Camera)ReflectionCache.playerCameraField.GetValue(__instance);
-                        Transform physGrabPoint = (Transform)ReflectionCache.physGrabPointField.GetValue(__instance);
-                        Transform physGrabPointPuller = (Transform)ReflectionCache.physGrabPointPullerField.GetValue(__instance);
-                        Transform physGrabPointPlane = (Transform)ReflectionCache.physGrabPointPlaneField.GetValue(__instance);
-                        if (playerCamera == null) return true;
-                        float maxDistance = 10f;
-                        Vector3 rayOrigin = playerCamera.transform.position;
-                        Vector3 rayDirection = playerCamera.transform.forward;
-                        LayerMask physGrabObjectMask = LayerMask.GetMask(new string[]
+                        LayerMask wallsMask = LayerMask.GetMask(new string[] { "Default" });
+                        LayerMask maskWithoutWalls = currentMask & ~wallsMask;
+
+                        LayerMask grabbableMask = LayerMask.GetMask(new string[]
                         {
-                    "PhysGrabObject",
-                    "PhysGrabObjectCart",
-                    "PhysGrabObjectHinge",
-                    "StaticGrabObject"
+                        "PhysGrabObject",
+                        "PhysGrabObjectCart",
+                        "PhysGrabObjectHinge",
+                        "StaticGrabObject"
                         });
-                        RaycastHit[] hits = Physics.SphereCastAll(rayOrigin, 0.5f, rayDirection, maxDistance, physGrabObjectMask);
-                        if (hits.Length > 0)
-                        {
-                            float closestDistance = float.MaxValue;
-                            RaycastHit closestHit = new RaycastHit();
-                            bool foundValidHit = false;
-                            foreach (RaycastHit hit in hits)
-                            {
-                                if (hit.collider.CompareTag("Phys Grab Object") && hit.distance < closestDistance)
-                                {
-                                    PhysGrabObject phgo = hit.transform.GetComponent<PhysGrabObject>();
-                                    if (phgo != null)
-                                    {
-                                        closestHit = hit;
-                                        closestDistance = hit.distance;
-                                        foundValidHit = true;
-                                    }
-                                }
-                            }
-                            if (foundValidHit)
-                            {
-                                Transform hitTransform = closestHit.transform;
-                                PhysGrabObject physGrabObject = hitTransform.GetComponent<PhysGrabObject>();
-                                if (physGrabObject == null) return true;
-                                FieldInfo grabDisableTimerField = AccessTools.Field(typeof(PhysGrabObject), "grabDisableTimer");
-                                if (grabDisableTimerField != null)
-                                {
-                                    float grabDisableTimer = (float)grabDisableTimerField.GetValue(physGrabObject);
-                                    if (grabDisableTimer > 0f)
-                                    {
-                                        return false;
-                                    }
-                                }
-                                if (physGrabObject.rb.IsSleeping())
-                                {
-                                    physGrabObject.OverrideIndestructible(0.5f);
-                                    physGrabObject.OverrideBreakEffects(0.5f);
-                                }
-                                ReflectionCache.grabbedObjectTransformField.SetValue(__instance, hitTransform);
-                                PhysGrabObjectCollider colliderComponent = closestHit.collider.GetComponent<PhysGrabObjectCollider>();
-                                if (colliderComponent == null)
-                                {
-                                    Debug.LogWarning("[GrabThroughWallsPatch] Could not find PhysGrabObjectCollider component");
-                                    return true;
-                                }
-                                var playerControllerType = Type.GetType("PlayerController, Assembly-CSharp");
-                                if (playerControllerType == null)
-                                {
-                                    Debug.LogError("[GrabThroughWallsPatch] Could not find PlayerController type");
-                                    return true;
-                                }
-                                var instanceField = AccessTools.Field(playerControllerType, "instance");
-                                if (instanceField == null)
-                                {
-                                    Debug.LogError("[GrabThroughWallsPatch] Could not find PlayerController.instance field");
-                                    return true;
-                                }
-                                var playerControllerInstance = instanceField.GetValue(null);
-                                if (playerControllerInstance == null)
-                                {
-                                    Debug.LogError("[GrabThroughWallsPatch] PlayerController.instance is null");
-                                    return true;
-                                }
-                                ReflectionCache.physGrabPointActivateMethod.Invoke(__instance, null);
-                                physGrabPointPuller.gameObject.SetActive(true);
-                                Rigidbody hitRigidbody = closestHit.rigidbody;
-                                ReflectionCache.grabbedObjectField.SetValue(__instance, hitRigidbody);
-                                Vector3 hitPoint = closestHit.point;
-                                var roomVolumeCheckField = AccessTools.Field(typeof(PhysGrabObject), "roomVolumeCheck");
-                                var roomVolumeCheck = roomVolumeCheckField.GetValue(physGrabObject);
-                                var currentSizeField = AccessTools.Field(roomVolumeCheck.GetType(), "currentSize");
-                                Vector3 currentSize = (Vector3)currentSizeField.GetValue(roomVolumeCheck);
-                                if (currentSize.magnitude < 0.5f)
-                                {
-                                    hitPoint = closestHit.collider.bounds.center;
-                                }
-                                float distanceToHit = Vector3.Distance(playerCamera.transform.position, hitPoint);
-                                Vector3 position = playerCamera.transform.position + playerCamera.transform.forward * distanceToHit;
-                                physGrabPointPlane.position = position;
-                                physGrabPointPuller.position = position;
-                                float physRotatingTimer = (float)ReflectionCache.physRotatingTimerField.GetValue(__instance);
-                                if (physRotatingTimer <= 0f)
-                                {
-                                    Vector3 forward = Camera.main.transform.InverseTransformDirection(hitTransform.forward);
-                                    Vector3 up = Camera.main.transform.InverseTransformDirection(hitTransform.up);
-                                    Vector3 right = Camera.main.transform.InverseTransformDirection(hitTransform.right);
-                                    ReflectionCache.cameraRelativeGrabbedForwardField.SetValue(__instance, forward);
-                                    ReflectionCache.cameraRelativeGrabbedUpField.SetValue(__instance, up);
-                                    ReflectionCache.cameraRelativeGrabbedRightField.SetValue(__instance, right);
-                                }
-                                physGrabPoint.position = hitPoint;
-                                var forceGrabPointField = AccessTools.Field(typeof(PhysGrabObject), "forceGrabPoint");
-                                Transform forceGrabPoint = (Transform)forceGrabPointField.GetValue(physGrabObject);
-                                if (forceGrabPoint == null)
-                                {
-                                    Vector3 localPos = hitTransform.InverseTransformPoint(hitPoint);
-                                    ReflectionCache.localGrabPositionField.SetValue(__instance, localPos);
-                                }
-                                else
-                                {
-                                    Vector3 forcePoint = forceGrabPoint.position;
-                                    float forceDist = 1f;
-                                    Vector3 forcePos = playerCamera.transform.position + playerCamera.transform.forward * forceDist - playerCamera.transform.up * 0.3f;
-                                    physGrabPoint.position = forcePoint;
-                                    physGrabPointPlane.position = forcePos;
-                                    physGrabPointPuller.position = forcePos;
-                                    Vector3 localGrabPos = hitTransform.InverseTransformPoint(forcePoint);
-                                    ReflectionCache.localGrabPositionField.SetValue(__instance, localGrabPos);
-                                }
-                                if (__instance.isLocal)
-                                {
-                                    var physGrabObjectField = AccessTools.Field(playerControllerType, "physGrabObject");
-                                    var physGrabActiveField = AccessTools.Field(playerControllerType, "physGrabActive");
-                                    physGrabObjectField.SetValue(playerControllerInstance, hitTransform.gameObject);
-                                    physGrabActiveField.SetValue(playerControllerInstance, true);
-                                }
-                                ReflectionCache.initialPressTimerField.SetValue(__instance, 0.1f);
-                                ReflectionCache.prevGrabbedField.SetValue(__instance, __instance.grabbed);
-                                ReflectionCache.grabbedField.SetValue(__instance, true);
-                                return false;
-                            }
-                        }
+
+                        maskWithoutWalls |= grabbableMask;
+
+                        maskField.SetValue(__instance, maskWithoutWalls);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[GrabThroughWallsPatch] Error in Prefix: {ex.Message}\n{ex.StackTrace}");
+                    Debug.LogError($"[GrabThroughWallsPatch] Error in Prefix: {ex.Message}");
                 }
-                return true;
+            }
+
+            [HarmonyPostfix]
+            public static void Postfix(PhysGrabber __instance)
+            {
+                if (!enableGrabThroughWalls || !__instance.isLocal)
+                    return;
+
+                try
+                {
+                    if (hasStoredOriginalMask)
+                    {
+                        maskField.SetValue(__instance, originalMask);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[GrabThroughWallsPatch] Error in Postfix: {ex.Message}");
+                }
             }
         }
-
         public static void ToggleGrabThroughWalls(bool enabled)
         {
             GrabThroughWallsPatch.enableGrabThroughWalls = enabled;
