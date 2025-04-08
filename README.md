@@ -1,101 +1,144 @@
 # beta-d.a.r.k.-cheat | [Discord](https://discord.gg/RAR8D26P4s) | [Launcher](https://github.com/hdunl/DarkInjector/releases/latest)
-<sub>*Made by [D4rkks](https://github.com/D4rkks) (and contributors)* | **v1.2**</sub>
+<sub>*Made by [D4rkks](https://github.com/D4rkks) (and contributors) | **v1.3***</sub>
 
-# **FUNCTIONS:**
+## FUNCTIONS
 
 ### Self
 - God Mode
 - Noclip
 - Infinite Health
-- Infinity Stamina
+- Infinite Stamina
 - Grab Guard
-- [RGB Player](https://github.com/svind1er)
-- Set Strength
-- Set Throw Strength
-- Set Grab Range
-- Set Sprint Speed
-- Set Stamina Recharge Delay
-- Set Stamina Recharge Rate
-- Set Extra Jumps
-- Set Jump Force
-- Set Custom Gravity
-- Set Crouch Delay
-- Set Crouch Speed
-- Set Slide Decay
-- Set Flashlight Intensity
-- Set Field of View
-  
-### ESP
-- Enemy ESP
+- RGB Player
+- **No Weapon Recoil (Host only)**
+- **No Weapon Cooldown (Host only)**
+- **Weapon Spread Multiplier (0-2x) (Host only)**
+- Player Stats:
+  - Strength
+  - Throw Strength
+  - Speed
+  - Grab Range
+  - Stamina Recharge Delay/Rate
+  - Extra Jumps
+  - Tumble Launch
+  - Jump Force
+  - Gravity
+  - Crouch Delay/Speed
+  - Slide Decay
+  - Flashlight Intensity
+  - Field of View (60-120°)
+
+### Visuals
+- Modern ESP (improved rendering)
+- Enemy ESP:
   - 2D Box/Chams
   - Name
   - Distance
   - Health
-- Item ESP
-  - [3D Box](https://github.com/chadlrnsn)/Chams
+- Item ESP:
+  - 3D Box/Chams
   - Name
   - Distance
     - Max Item Distance Slider
   - Value
     - Min Item Value Slider
   - Dead Player Heads
-- Chams Color Picker
-- Extraction ESP
+- Customizable Chams Colors
+- Extraction Point ESP:
   - Name/Status
   - Distance
-- Player ESP
-  - 2/3D Box
+- Player ESP:
+  - 2D/3D Box
   - Name
   - Distance
   - Health
-    
+  - Alive/Dead List
+
 ### Combat
-- See Live/Dead Players
-- Revive Any Player
-- Kill Any Player
-- Heal Any Player
-- Damage Any Player
-- Force Tumble
-- Teleport
-  - Any player to any player
-  - Any player to void
-  
+- Player Selection
+- Damage Player (-1HP)
+- Max Heal
+- Kill/Revive Player
+- Force Tumble (10 seconds)
+- Advanced Teleport System:
+  - Source Selection (All/Individual Players)
+  - Destination Selection (Players/Void)
+
 ### Misc
-- Force Mute
-- Force High Volume
-- Kick Player
-- Crash Lobby's Games
-- Force Host w/ Force Start
-- Spoof Names
-- Spoof Colors
-- Hijack Chats
-- No Fog
-- Disable Watermark
-- Map Tweaks
+- Spawn Money
+- Name Spoofing:
+  - Target Selection (All/Individual Players)
+  - Persistent Name Spoofing
+- Color Spoofing:
+  - Target Selection (All/Individual Players)
+  - 35+ Color Presets
+- Chat Spammer:
+  - Target Selection (All/Individual Players)
+- Extraction Point Activator
+- Map Tweaks:
   - Disable '?' Overlay
-  - Discover Valuables
+  - Discover Map Valuables
+- No Fog
+- Toggle Watermark
 
 ### Enemies
-- Enemy List
-- Enemy Spawner
-- Kill All/Selected Enemy
-- Blind Enemies
-- Teleport
-  - Any enemy to any player
-  - Any enemy to void
-    
+- Complete Enemy List with Health Status
+- **Enemy Spawning System (Host only):**
+  - Multiple Enemy Types
+  - Quantity Control (1-10)
+- Kill Selected Enemy
+- Kill All Enemies
+- **Blind Enemies (Host only)**
+- Enemy Teleport:
+  - Teleport Selected Enemy to Any Player
+
 ### Items
-- Item List
-- Teleport All/Selected Item to You
-- Change Item Value
-- Spawn MoneyBag
-- Item Spawner
+- Item List (sorted by value)
+- Teleport Item to Me
+- Teleport All Items to Me
+- Item Value Editor
+- Advanced Item Spawner:
+  - Search Functionality
+  - Value Control
+  - Spawn Single or Multiple (up to 50)
 
 ### Hotkeys
+- Configurable System Keys:
+  - Menu Toggle
+  - Reload
+  - Unload
+- 12 Customizable Action Hotkeys
+- Comprehensive Action Selection
+- Save/Load Hotkey Settings
 
-# **TO-DO:**
+### Trolling
+- Force Glitch
+- Force Unmute/Mute
+- Force Infinite Tumble
+- Infinite Loading Screen
+- Loading Screen Recovery
+- Player Crash
+- Lobby Crash
+
+### Config
+- Save/Load Configuration
+- Status Indicator
+
+### Servers
+- Server Browser
+- Lobby Filtering:
+  - Search
+  - Region Sorting
+  - Player Count Sorting
+- Lobby Information:
+  - Player Count
+  - Region
+  - Host
+- Lobby Member Display
+- Invite Link Generation
+
+## TO-DO
 - Take/Give Host (?)
 - Change Damage
 - Complete Mission
-- Bypass Extraction Lock
 - No Item Damage

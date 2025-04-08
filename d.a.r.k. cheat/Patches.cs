@@ -317,6 +317,139 @@ namespace dark_cheat
             }
         }
 
+        private static class ReflectionCache
+        {
+            public static FieldInfo maskField;
+            public static FieldInfo playerCameraField;
+            public static FieldInfo grabbedObjectField;
+            public static FieldInfo grabbedObjectTransformField;
+            public static FieldInfo localGrabPositionField;
+            public static FieldInfo physGrabPointField;
+            public static FieldInfo physGrabPointPullerField;
+            public static FieldInfo physGrabPointPlaneField;
+            public static FieldInfo grabDisableTimerField;
+            public static FieldInfo cameraRelativeGrabbedForwardField;
+            public static FieldInfo cameraRelativeGrabbedUpField;
+            public static FieldInfo cameraRelativeGrabbedRightField;
+            public static FieldInfo initialPressTimerField;
+            public static FieldInfo physRotatingTimerField;
+            public static FieldInfo prevGrabbedField;
+            public static FieldInfo grabbedField;
+
+            public static MethodInfo physGrabPointActivateMethod;
+
+            public static bool initialized = false;
+
+            public static void Initialize()
+            {
+                if (initialized) return;
+                Type physGrabberType = typeof(PhysGrabber);
+                maskField = AccessTools.Field(physGrabberType, "mask");
+                playerCameraField = AccessTools.Field(physGrabberType, "playerCamera");
+                grabbedObjectField = AccessTools.Field(physGrabberType, "grabbedObject");
+                grabbedObjectTransformField = AccessTools.Field(physGrabberType, "grabbedObjectTransform");
+                localGrabPositionField = AccessTools.Field(physGrabberType, "localGrabPosition");
+                physGrabPointField = AccessTools.Field(physGrabberType, "physGrabPoint");
+                physGrabPointPullerField = AccessTools.Field(physGrabberType, "physGrabPointPuller");
+                physGrabPointPlaneField = AccessTools.Field(physGrabberType, "physGrabPointPlane");
+                grabDisableTimerField = AccessTools.Field(physGrabberType, "grabDisableTimer");
+                cameraRelativeGrabbedForwardField = AccessTools.Field(physGrabberType, "cameraRelativeGrabbedForward");
+                cameraRelativeGrabbedUpField = AccessTools.Field(physGrabberType, "cameraRelativeGrabbedUp");
+                cameraRelativeGrabbedRightField = AccessTools.Field(physGrabberType, "cameraRelativeGrabbedRight");
+                initialPressTimerField = AccessTools.Field(physGrabberType, "initialPressTimer");
+                physRotatingTimerField = AccessTools.Field(physGrabberType, "physRotatingTimer");
+                prevGrabbedField = AccessTools.Field(physGrabberType, "prevGrabbed");
+                grabbedField = AccessTools.Field(physGrabberType, "grabbed");
+                physGrabPointActivateMethod = AccessTools.Method(physGrabberType, "PhysGrabPointActivate");
+                initialized = true;
+                Debug.Log("[GrabThroughWallsPatch] Reflection cache initialized successfully");
+            }
+        }
+
+        [HarmonyPatch(typeof(PhysGrabber), "RayCheck")]
+        public class GrabThroughWallsPatch
+        {
+            public static bool enableGrabThroughWalls = false;
+            private static FieldInfo maskField;
+            private static LayerMask originalMask;
+            private static bool hasStoredOriginalMask = false;
+
+            static GrabThroughWallsPatch()
+            {
+                maskField = AccessTools.Field(typeof(PhysGrabber), "mask");
+            }
+
+            [HarmonyPrefix]
+            public static void Prefix(PhysGrabber __instance, bool _grab)
+            {
+                if (!enableGrabThroughWalls || !__instance.isLocal)
+                    return;
+
+                try
+                {
+                    LayerMask currentMask = (LayerMask)maskField.GetValue(__instance);
+
+                    if (!hasStoredOriginalMask)
+                    {
+                        originalMask = currentMask;
+                        hasStoredOriginalMask = true;
+                    }
+
+                    if (_grab)
+                    {
+                        LayerMask wallsMask = LayerMask.GetMask(new string[] { "Default" });
+                        LayerMask maskWithoutWalls = currentMask & ~wallsMask;
+
+                        LayerMask grabbableMask = LayerMask.GetMask(new string[]
+                        {
+                        "PhysGrabObject",
+                        "PhysGrabObjectCart",
+                        "PhysGrabObjectHinge",
+                        "StaticGrabObject"
+                        });
+
+                        maskWithoutWalls |= grabbableMask;
+
+                        maskField.SetValue(__instance, maskWithoutWalls);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[GrabThroughWallsPatch] Error in Prefix: {ex.Message}");
+                }
+            }
+
+            [HarmonyPostfix]
+            public static void Postfix(PhysGrabber __instance)
+            {
+                if (!enableGrabThroughWalls || !__instance.isLocal)
+                    return;
+
+                try
+                {
+                    if (hasStoredOriginalMask)
+                    {
+                        maskField.SetValue(__instance, originalMask);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[GrabThroughWallsPatch] Error in Postfix: {ex.Message}");
+                }
+            }
+        }
+        public static void ToggleGrabThroughWalls(bool enabled)
+        {
+            GrabThroughWallsPatch.enableGrabThroughWalls = enabled;
+        }
+
+        public static bool IsGrabThroughWallsEnabled()
+        {
+            return GrabThroughWallsPatch.enableGrabThroughWalls;
+        }
+    }
+
+
         [HarmonyPatch(typeof(ItemGun), "ShootRPC")]
         public class NoWeaponSpread
         {
@@ -495,4 +628,3 @@ namespace dark_cheat
             }
         }
     }
-}
