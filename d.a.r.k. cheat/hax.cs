@@ -133,6 +133,10 @@ namespace dark_cheat
         private string colorIndexText = "1"; // Default color index
         private bool showColorIndexDropdown = false;
         private Vector2 colorIndexScrollPosition = Vector2.zero;
+        private System.Random rainbowRandom = new System.Random();
+        private Dictionary<int, bool> playerRainbowStates = new Dictionary<int, bool>();
+        private Dictionary<int, float> lastRainbowTimes = new Dictionary<int, float>();
+        private const float PLAYER_RAINBOW_DELAY = 0.1f;
         private Dictionary<int, string> colorNameMapping = new Dictionary<int, string>()
         {
             {0, "White"}, {1, "Grey"}, {2, "Black"},
@@ -462,6 +466,26 @@ namespace dark_cheat
                 if (NoclipController.noclipActive)
                 {
                     NoclipController.UpdateMovement();
+                }
+            }
+
+            foreach (var entry in playerRainbowStates)
+            {
+                int colorPlayerIndex = entry.Key;
+                bool isRainbowEnabled = entry.Value;
+                if (!isRainbowEnabled)
+                    continue;
+
+                var rainbowColorIndex = rainbowRandom.Next(0, 36);
+                string targetName = colorTargetVisibleName;
+                if (!lastRainbowTimes.ContainsKey(colorPlayerIndex))
+                {
+                    lastRainbowTimes[colorPlayerIndex] = Time.time;
+                }
+                if (Time.time - lastRainbowTimes[colorPlayerIndex] >= PLAYER_RAINBOW_DELAY)
+                {
+                    ChatHijack.ChangePlayerColor(rainbowColorIndex, targetName, playerList, playerNames);
+                    lastRainbowTimes[colorPlayerIndex] = Time.time;
                 }
             }
         }
@@ -1562,6 +1586,22 @@ namespace dark_cheat
                 showColorIndexDropdown = !showColorIndexDropdown;
             }
             GUILayout.EndHorizontal();
+
+            if (!playerRainbowStates.ContainsKey(selectedPlayerIndex))
+            {
+                playerRainbowStates[selectedPlayerIndex] = false;
+            }
+
+            bool rainbowState = playerRainbowStates[selectedPlayerIndex];
+            ToggleLogic("rainbow_spoof_" + selectedPlayerIndex, " Rainbow spoof", ref rainbowState, () => {
+                if (rainbowState)
+                {
+                    lastRainbowTimes[selectedPlayerIndex] = Time.time;
+                }
+            });
+
+            playerRainbowStates[selectedPlayerIndex] = rainbowState;
+            GUILayout.Space(10);
 
             if (colorDropdownVisible)
             {
