@@ -844,7 +844,7 @@ namespace dark_cheat
             GUILayout.BeginVertical();
             GUILayout.Space(5);
 
-            GUILayout.Label("DARK MENU 1.3", titleStyle);
+            GUILayout.Label("DARK MENU 1.3e", titleStyle);
 
             GUILayout.BeginHorizontal();
 
