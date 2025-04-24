@@ -1,4 +1,4 @@
-﻿﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -11,6 +11,9 @@ namespace dark_cheat
     {
         static public object playerHealthInstance;
         static public object playerMaxHealthInstance;
+
+        private static Type postProcessingType = null;
+        private static Type cameraZoomType = null;
 
         public static void HealPlayer(object targetPlayer, int healAmount, string playerName)
         {
@@ -51,7 +54,7 @@ namespace dark_cheat
                     int currentHealth = currentHealthField != null ? (int)currentHealthField.GetValue(playerHealthInstance) : 0;
                     int maxHealth = GetPlayerMaxHealth(playerHealthInstance);
 
-                    photonView.RPC("UpdateHealthRPC", RpcTarget.AllBuffered, new object[] {maxHealth, maxHealth, true });
+                    photonView.RPC("UpdateHealthRPC", RpcTarget.AllBuffered, new object[] { maxHealth, maxHealth, true });
                     DLog.Log($"RPC 'UpdateHealthRPC' sent to all with health={currentHealth + maxHealth}, maxHealth={maxHealth}, effect=true.");
 
                     try
@@ -144,16 +147,16 @@ namespace dark_cheat
                 DLog.Log("Invalid player index for revival!");
                 return;
             }
-            
+
             object selectedPlayer = playerList[selectedPlayerIndex];
             string playerName = playerNames[selectedPlayerIndex];
-            
+
             if (selectedPlayer == null)
             {
                 DLog.Log($"Selected player at index {selectedPlayerIndex} is null!");
                 return;
             }
-            
+
             ReviveSelectedPlayer(selectedPlayer, playerList, playerName);
         }
 
@@ -165,21 +168,31 @@ namespace dark_cheat
                 return;
             }
 
+            object playerDeathHeadInstance = null;
+            GameObject playerDeathHeadGameObject = null;
             try
             {
                 var playerDeathHeadField = selectedPlayer.GetType().GetField("playerDeathHead", BindingFlags.Public | BindingFlags.Instance);
                 if (playerDeathHeadField != null)
                 {
-                    var playerDeathHeadInstance = playerDeathHeadField.GetValue(selectedPlayer);
+                    playerDeathHeadInstance = playerDeathHeadField.GetValue(selectedPlayer);
                     if (playerDeathHeadInstance != null)
                     {
-                        // Retrieve and modify 'inExtractionPoint' to allow revival
+                        if (playerDeathHeadInstance is Component deathHeadComponent)
+                        {
+                            playerDeathHeadGameObject = deathHeadComponent.gameObject;
+                            DLog.Log("Got PlayerDeathHead GameObject.");
+                        }
+                        else
+                        {
+                            DLog.Log("'playerDeathHead' instance is not a Component, cannot get GameObject.");
+                        }
+
                         var inExtractionPointField = playerDeathHeadInstance.GetType().GetField("inExtractionPoint", BindingFlags.NonPublic | BindingFlags.Instance);
                         var reviveMethod = playerDeathHeadInstance.GetType().GetMethod("Revive", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                         if (inExtractionPointField != null)
                         {
                             inExtractionPointField.SetValue(playerDeathHeadInstance, true);
-                            DLog.Log("'inExtractionPoint' field set to true.");
                             DLog.Log("'inExtractionPoint' field set to true.");
                         }
                         if (reviveMethod != null)
@@ -220,6 +233,18 @@ namespace dark_cheat
                     else DLog.Log("PlayerHealth instance is null, health restoration failed.");
                 }
                 else DLog.Log("'playerHealth' field not found, healing not performed.");
+
+                // --- Camera Darkening Fix ---
+                if (playerDeathHeadGameObject != null)
+                {
+                    ResetPostProcessingOverrides(playerDeathHeadGameObject);
+                    ResetCameraZoomOverride(playerDeathHeadGameObject);
+                }
+                else
+                {
+                    DLog.Log("Cannot reset effects because playerDeathHead GameObject is null.");
+                }
+
             }
             catch (Exception e)
             {
@@ -234,27 +259,27 @@ namespace dark_cheat
                 DLog.Log("Invalid player index for kill operation!");
                 return;
             }
-            
+
             object selectedPlayer = playerList[selectedPlayerIndex];
             string playerName = playerNames[selectedPlayerIndex];
-            
+
             if (selectedPlayer == null)
             {
                 DLog.Log($"Selected player at index {selectedPlayerIndex} is null!");
                 return;
             }
-            
+
             KillSelectedPlayer(selectedPlayer, playerList, playerName);
         }
 
         public static void KillSelectedPlayer(object selectedPlayer, System.Collections.Generic.List<object> playerList, string playerName)
         {
-            if (selectedPlayer == null) 
-            { 
-                DLog.Log("Selected player is null!"); 
-                return; 
+            if (selectedPlayer == null)
+            {
+                DLog.Log("Selected player is null!");
+                return;
             }
-            
+
             try
             {
                 DLog.Log($"Attempting to kill: {playerName} | MasterClient: {PhotonNetwork.IsMasterClient}");
@@ -264,7 +289,7 @@ namespace dark_cheat
                 if (photonView == null) { DLog.Log("PhotonView is not valid!"); return; }
                 var playerHealthField = selectedPlayer.GetType().GetField("playerHealth", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 if (playerHealthField == null) { DLog.Log("'playerHealth' field not found!"); return; }
-                var playerHealthInstance = playerHealthField.GetValue(selectedPlayer);
+                var playerHealthInstance = playerHealthField.GetValue(selectedPlayer); // Keep original variable name
                 if (playerHealthInstance == null) { DLog.Log("playerHealth instance is null!"); return; }
                 var healthType = playerHealthInstance.GetType();
                 var deathMethod = healthType.GetMethod("Death", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -302,7 +327,7 @@ namespace dark_cheat
             }
             catch (Exception e) { DLog.Log($"Error trying to kill {playerName}: {e.Message}"); }
         }
-        
+
         public static void ForcePlayerTumble(float duration = 10f)  // Default duration is 10 seconds
         {
             if (Hax2.selectedPlayerIndex < 0 || Hax2.selectedPlayerIndex >= Hax2.playerList.Count)
@@ -368,10 +393,87 @@ namespace dark_cheat
                 DLog.Log("playerHealthInstance is null when trying to get maxHealth!");
                 return 100;
             }
-            
+
             var healthType = playerHealthInstance.GetType();
             var maxHealthField = healthType.GetField("maxHealth", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             return maxHealthField != null ? (int)maxHealthField.GetValue(playerHealthInstance) : 100;
+        }
+
+        // --- Helper Methods for Camera Darkening Fix ---
+        private static void ResetPostProcessingOverrides(GameObject sourceObject)
+        {
+            try
+            {
+                if (postProcessingType == null)
+                {
+                    postProcessingType = Type.GetType("PostProcessing, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+                }
+                if (postProcessingType == null) { DLog.Log("Could not find PostProcessing Type."); return; }
+                var ppInstanceProperty = postProcessingType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
+                if (ppInstanceProperty == null) { DLog.Log("Could not find PostProcessing.Instance property."); return; }
+                object ppInstance = ppInstanceProperty.GetValue(null);
+                if (ppInstance != null)
+                {
+                    DLog.Log("Found PostProcessing instance. Attempting to cancel overrides...");
+                    TryCallMethod(ppInstance, "VignetteOverride", Color.clear, 0f, 0f, 0f, 0f, 0f, sourceObject);
+                    TryCallMethod(ppInstance, "SaturationOverride", 0f, 0f, 0f, 0f, sourceObject);
+                    TryCallMethod(ppInstance, "ContrastOverride", 0f, 0f, 0f, 0f, sourceObject);
+                    DLog.Log("Called PostProcessing override methods with default values.");
+                }
+                else { DLog.Log("PostProcessing instance is null."); }
+            }
+            catch (Exception e) { DLog.Log($"Error resetting PostProcessing: {e.Message}"); }
+        }
+
+        private static void ResetCameraZoomOverride(GameObject sourceObject)
+        {
+            try
+            {
+                if (cameraZoomType == null)
+                {
+                    cameraZoomType = Type.GetType("CameraZoom, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+                }
+                if (cameraZoomType == null) { DLog.Log("Could not find CameraZoom Type."); return; }
+                var czInstanceProperty = cameraZoomType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
+                if (czInstanceProperty == null) { DLog.Log("Could not find CameraZoom.Instance property."); return; }
+                object czInstance = czInstanceProperty.GetValue(null);
+                if (czInstance != null)
+                {
+                    DLog.Log("Found CameraZoom instance. Attempting to cancel override...");
+                    float defaultZoom = 60f;
+                    var defaultZoomField = cameraZoomType.GetField("playerZoomDefault", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (defaultZoomField != null)
+                    {
+                        try { defaultZoom = (float)defaultZoomField.GetValue(czInstance); DLog.Log($"Using default zoom value: {defaultZoom}"); } catch { DLog.Log("Could not get default zoom value, using fallback 60f."); }
+                    }
+                    else { DLog.Log("Could not find 'playerZoomDefault' field, using fallback 60f."); }
+                    TryCallMethod(czInstance, "OverrideZoomSet", defaultZoom, 0f, 0f, 0f, sourceObject, 200);
+                    DLog.Log("Called CameraZoom override method with default values.");
+                }
+                else { DLog.Log("CameraZoom instance is null."); }
+            }
+            catch (Exception e) { DLog.Log($"Error resetting CameraZoom: {e.Message}"); }
+        }
+
+        private static bool TryCallMethod(object instance, string methodName, params object[] parameters)
+        {
+            if (instance == null) { DLog.Log($"Cannot call '{methodName}', instance is null."); return false; }
+            try
+            {
+                var paramTypes = new Type[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++) { paramTypes[i] = parameters[i]?.GetType() ?? typeof(object); if (parameters[i] is GameObject) paramTypes[i] = typeof(GameObject); }
+                var method = instance.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, paramTypes, null);
+                if (method == null) { DLog.Log($"Method '{methodName}' with specific args not found, trying by name only..."); method = instance.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance); }
+                if (method != null) { method.Invoke(instance, parameters); return true; }
+                else { DLog.Log($"Method '{methodName}' not found on {instance.GetType().Name}."); return false; }
+            }
+            catch (Exception e)
+            {
+                DLog.Log($"Error calling method '{methodName}' on {instance.GetType().Name}: {e.GetType().Name} - {e.Message}");
+                if (e is TargetParameterCountException) { DLog.Log("Parameter count mismatch. Check method signature."); }
+                else if (e is ArgumentException) { DLog.Log("Argument type mismatch. Check parameter types."); }
+                return false;
+            }
         }
     }
 }
